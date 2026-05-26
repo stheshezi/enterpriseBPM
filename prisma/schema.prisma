@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Multi-tenant isolation: each model includes tenantId and references Tenant
+model Tenant {
+  id             String          @id @default(uuid())
+  name           String
+  createdAt      DateTime        @default(now())
+  // relations
+  users          User[]
+  roles          Role[]
+  travelRequests TravelRequest[]
+  workflowTasks  WorkflowTask[]
+  auditLogs      AuditLog[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  roles     Role[]     @relation("UserRoles")
+  auditLogs AuditLog[] @relation("CreatedBy")
+
+  assignedTasks WorkflowTask[]
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  // many-to-many via RolePermission
+  permissions Permission[] @relation("RolePermissions")
+  users       User[]       @relation("UserRoles")
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  action      String // e.g., "create:travelRequest"
+  description String?
+  // many-to-many via RolePermission
+  roles       Role[]  @relation("RolePermissions")
+}
+
+// Junction tables for many-to-many relations
+// Implicit many‑to‑many between User and Role – Prisma will generate the join table.
+
+// Implicit many‑to‑many between Role and Permission – Prisma will generate the join table.
+
+model TravelRequest {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  status      String         @default("PENDING")
+  createdAt   DateTime       @default(now())
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id])
+  // relations
+  tasks       WorkflowTask[]
+  // auditLogs removed – use generic AuditLog relation from AuditLog side.
+}
+
+model WorkflowTask {
+  id              String        @id @default(uuid())
+  name            String
+  status          String        @default("TODO")
+  assigneeId      String?
+  // optional relation to User (assignee)
+  assignee        User?         @relation(fields: [assigneeId], references: [id])
+  travelRequestId String
+  travelRequest   TravelRequest @relation(fields: [travelRequestId], references: [id])
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  createdAt       DateTime      @default(now())
+  // auditLogs removed – use generic AuditLog relation from AuditLog side.
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String // e.g., "CREATE", "UPDATE"
+  entity    String // model name
+  entityId  String // id of the affected record
+  timestamp DateTime @default(now())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  // optional creator user
+  userId    String?
+  user      User?    @relation("CreatedBy", fields: [userId], references: [id])
+}
