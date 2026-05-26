@@ -405,6 +405,24 @@ button:hover:not(:disabled) {
 .demo-logins button { display: flex; align-items: center; justify-content: space-between; min-height: 44px; border: 1px solid var(--border); background: var(--panel); color: var(--foreground); text-align: left; }
 .demo-logins small { color: var(--muted); }
 
+.landing-page { min-height: 100vh; background: linear-gradient(180deg, #ffffff 0%, var(--background) 58%); }
+.landing-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: min(1120px, 100%); margin: 0 auto; padding: 18px 24px; }
+.landing-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+.landing-brand span { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; background: var(--accent); color: #ffffff; font-weight: 900; }
+.landing-hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr); gap: 32px; align-items: center; width: min(1120px, 100%); margin: 0 auto; padding: 72px 24px 36px; }
+.landing-hero__copy { display: grid; gap: 18px; }
+.landing-hero__copy h1 { font-size: clamp(2.4rem, 5vw, 4.8rem); max-width: 720px; }
+.landing-hero__copy > p:not(.eyebrow) { max-width: 660px; margin: 0; color: var(--muted); font-size: 1.08rem; line-height: 1.7; }
+.landing-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.landing-hero__panel { display: grid; gap: 1px; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: var(--border); box-shadow: 0 18px 55px rgba(16, 24, 40, 0.12); }
+.landing-hero__panel div { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--panel); padding: 22px; }
+.landing-hero__panel span { color: var(--muted); font-weight: 700; }
+.landing-hero__panel strong { font-size: 2rem; }
+.landing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; width: min(1120px, 100%); margin: 0 auto; padding: 20px 24px 64px; }
+.login-modal { display: grid; gap: 18px; max-width: 430px; }
+.login-modal h2 { margin: 0; }
+.login-modal__form { display: grid; gap: 14px; }
+
 .layout-sidebar { position: sticky; top: 0; height: 100vh; flex: 0 0 auto; background: var(--sidebar); overflow: hidden; }
 .layout-sidebar__brand { display: flex; align-items: center; gap: 12px; }
 .layout-sidebar__brand > span { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; background: var(--accent); color: #ffffff; font-weight: 900; }
@@ -460,9 +478,23 @@ button:hover:not(:disabled) {
 
   .identity-strip,
   .dashboard-grid,
+  .landing-hero,
+  .landing-grid,
   .table-row,
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .landing-nav {
+    padding-inline: 16px;
+  }
+
+  .landing-hero {
+    padding: 42px 16px 24px;
+  }
+
+  .landing-grid {
+    padding-inline: 16px;
   }
 
   .layout-sidebar {

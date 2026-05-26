@@ -1,0 +1,21 @@
+
+> enterprise-bpm-platform@0.1.0 dev
+> next dev --turbo
+
+  ▲ Next.js 14.2.35 (turbo)
+  - Local:        http://localhost:3000
+  - Environments: .env
+
+ ✓ Starting...
+Creating turbopack project {
+  dir: 'C:\\Users\\shezi\\Music\\Projects\\travel\\enterprise-bpm-platform',
+  testMode: true
+}
+ ✓ Compiled in 471ms
+ ✓ Ready in 2.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 1821ms
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1477ms
+ GET / 200 in 573ms
+ ✓ Compiled /login in 421ms

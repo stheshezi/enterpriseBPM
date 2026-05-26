@@ -1,83 +1,98 @@
+"use client";
+
 import Link from "next/link";
-import { PERMISSIONS } from "@/config/permissions";
-import { ROLE_DEFINITIONS } from "@/config/roles";
-import { requireCurrentUser, userCan } from "@/lib/access-control";
+import { useSession } from "next-auth/react";
+import { useState } from "react";
+import { LoginModal } from "@/components/ui/LoginModal";
 
-const dashboardCards = [
+const platformHighlights = [
   {
-    title: "New travel request",
-    body: "Submit a trip and send it straight into approval.",
-    href: "/requests/new",
-    permission: PERMISSIONS.REQUESTS_CREATE,
+    title: "Tenant-aware workflow",
+    body: "Separate tenant context, roles, and permissions for controlled travel operations.",
   },
   {
-    title: "User command center",
-    body: "Review users, assigned roles, and permission coverage.",
-    href: "/admin/users",
-    permission: PERMISSIONS.USERS_VIEW,
+    title: "Approval routing",
+    body: "Manager and finance steps keep each request moving with clear task ownership.",
   },
   {
-    title: "Manager approvals",
-    body: "Approve operational travel requests waiting on managers.",
-    href: "/approvals",
-    permission: PERMISSIONS.REQUESTS_APPROVE_MANAGER,
+    title: "Audit-ready controls",
+    body: "User actions, request decisions, and administrative changes are captured for review.",
   },
-  {
-    title: "Finance approvals",
-    body: "Review cost centers, budgets, and finance approval tasks.",
-    href: "/approvals",
-    permission: PERMISSIONS.REQUESTS_APPROVE_FINANCE,
-  },
-  {
-    title: "Audit and controls",
-    body: "Inspect tenant activity and sensitive access events.",
-    href: "/admin/audit-logs",
-    permission: PERMISSIONS.AUDIT_VIEW,
-  },
-  {
-    title: "System administration",
-    body: "Godlevel tenant, role, and platform controls.",
-    href: "/admin",
-    permission: PERMISSIONS.SYSTEM_ADMIN,
-  },
-] as const;
+];
 
-export default async function HomePage() {
-  const user = await requireCurrentUser();
-  const visibleCards = dashboardCards.filter((card) => userCan(user, card.permission));
+export default function LandingPage() {
+  const { status } = useSession();
+  const [loginOpen, setLoginOpen] = useState(false);
+  const isAuthenticated = status === "authenticated";
 
   return (
-    <main className="page-shell">
-      <section className="toolbar">
-        <div>
-          <p className="eyebrow">Enterprise BPM</p>
-          <h1>{user.name ?? user.email}</h1>
-        </div>
-      </section>
-
-      <section className="identity-strip">
-        <div>
-          <span>Tenant</span>
-          <strong>{user.tenantDomain ?? user.tenantId}</strong>
-        </div>
-        <div>
-          <span>Roles</span>
-          <strong>{user.roles.map((role) => ROLE_DEFINITIONS[role].label).join(", ")}</strong>
-        </div>
-        <div>
-          <span>Permissions</span>
-          <strong>{user.permissions.length}</strong>
-        </div>
-      </section>
-
-      <section className="dashboard-grid">
-        {visibleCards.map((card) => (
-          <Link className="feature-card" href={card.href} key={card.title}>
-            <h2>{card.title}</h2>
-            <p>{card.body}</p>
+    <main className="landing-page">
+      <header className="landing-nav">
+        <Link className="landing-brand" href="/">
+          <span>EB</span>
+          <strong>Enterprise BPM</strong>
+        </Link>
+        {isAuthenticated ? (
+          <Link className="ui-button ui-button--primary" href="/travel-requests/new">
+            Open system
           </Link>
+        ) : (
+          <button className="ui-button ui-button--outline" onClick={() => setLoginOpen(true)} type="button">
+            Log in
+          </button>
+        )}
+      </header>
+
+      <section className="landing-hero">
+        <div className="landing-hero__copy">
+          <p className="eyebrow">Travel request workflow</p>
+          <h1>Enterprise BPM Platform</h1>
+          <p>
+            A tenant-aware operating layer for creating travel requests, routing approvals,
+            managing users, and keeping finance controls visible.
+          </p>
+          <div className="landing-actions">
+            {isAuthenticated ? (
+              <Link className="ui-button ui-button--primary ui-button--lg" href="/travel-requests/new">
+                Continue
+              </Link>
+            ) : (
+              <button className="ui-button ui-button--primary ui-button--lg" onClick={() => setLoginOpen(true)} type="button">
+                Sign in
+              </button>
+            )}
+            <Link className="ui-button ui-button--secondary ui-button--lg" href="/login">
+              Full login page
+            </Link>
+          </div>
+        </div>
+
+        <div className="landing-hero__panel" aria-label="Platform preview">
+          <div>
+            <span>Requests</span>
+            <strong>42</strong>
+          </div>
+          <div>
+            <span>Pending approval</span>
+            <strong>8</strong>
+          </div>
+          <div>
+            <span>Audit events</span>
+            <strong>128</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-grid">
+        {platformHighlights.map((item) => (
+          <article className="feature-card" key={item.title}>
+            <h2>{item.title}</h2>
+            <p>{item.body}</p>
+          </article>
         ))}
       </section>
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </main>
   );
 }

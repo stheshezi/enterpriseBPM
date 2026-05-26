@@ -24,15 +24,42 @@ if not exist .env (
     echo ✅ Created .env for development
 )
 
-REM Start with docker compose dev config
-echo 🐳 Starting containers with hot reload...
-docker compose -f docker-compose.dev.yml up --build
+rem === Install Node.js dependencies (host side) ===
+echo 📦 Installing Node.js dependencies...
+npm ci
+if errorlevel 1 (
+    echo ❌ npm install failed
+    exit /b 1
+)
 
-echo.
-echo ===========================================
-echo ✅ Development Environment Ready
-echo ===========================================
-echo Frontend:    http://localhost:3000
-echo Hot Reload:  Enabled (changes auto-reload^)
-echo Database:    postgres://localhost:5432
-echo ===========================================
+rem === Start Docker containers (dev) ===
+echo 🐳 Starting containers with hot‑reload...
+docker compose -f docker-compose.dev.yml up --build -d
+if errorlevel 1 (
+    echo ❌ Docker compose failed
+    exit /b 1
+)
+
+rem === Wait for Postgres to be ready ===
+echo ⏳ Waiting for PostgreSQL to become healthy...
+timeout /t 10 /nobreak >nul
+
+rem === Run Prisma migrations inside the app container ===
+echo 🗄️ Applying Prisma migrations inside container...
+docker compose exec app npm run prisma:migrate
+if errorlevel 1 (
+    echo ❌ Prisma migrate failed
+    exit /b 1
+)
+
+rem === Seed the database inside the app container ===
+echo 🌱 Seeding database inside container...
+docker compose exec app npm run prisma:seed
+if errorlevel 1 (
+    echo ❌ Prisma seed failed
+    exit /b 1
+)
+
+rem === Start Next.js dev server (inside container) ===
+echo 🚀 Starting Next.js dev server (http://localhost:3000)...
+docker compose exec app npm run dev

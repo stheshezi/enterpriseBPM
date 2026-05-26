@@ -1,122 +1,124 @@
-import { useState, Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
+  callbackUrl?: string;
 }
 
-export const LoginModal = ({ open, onClose }: LoginModalProps) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+const demoUsers = [
+  { role: "Super Admin", email: "admin@example.com" },
+  { role: "Tenant Admin", email: "tenant.admin@example.com" },
+  { role: "Manager", email: "manager@example.com" },
+  { role: "Finance", email: "finance@example.com" },
+  { role: "Requester", email: "requester@example.com" },
+];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError('');
-    try {
-      // TODO: replace with real auth call (next‑auth signIn)
-      // Simulate delay
-      await new Promise((r) => setTimeout(r, 800));
-      // For demo, accept any credentials
-      onClose();
-    } catch (err) {
-      setError('Login failed. Please check your credentials.');
-    } finally {
-      setIsSubmitting(false);
+export const LoginModal = ({ open, onClose, callbackUrl = "/travel-requests/new" }: LoginModalProps) => {
+  const router = useRouter();
+  const [email, setEmail] = useState("admin@example.com");
+  const [password, setPassword] = useState("ChangeMe123!");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
     }
-  };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose, open]);
+
+  if (!open) return null;
+
+  async function submitCredentials(nextEmail = email, nextPassword = password) {
+    setIsSubmitting(true);
+    setError("");
+
+    const result = await signIn("credentials", {
+      email: nextEmail,
+      password: nextPassword,
+      redirect: false,
+    });
+
+    setIsSubmitting(false);
+
+    if (result?.error) {
+      setError("Login failed. Check the database seed and credentials.");
+      return;
+    }
+
+    onClose();
+    router.push(callbackUrl);
+    router.refresh();
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void submitCredentials();
+  }
 
   return (
-    <Transition.Root show={open} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
-        </Transition.Child>
+    <div className="ui-modal" role="presentation" onMouseDown={onClose}>
+      <section
+        aria-modal="true"
+        className="ui-modal__panel login-modal"
+        role="dialog"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="ui-modal__header">
+          <div>
+            <p className="eyebrow">Enterprise BPM</p>
+            <h2>Sign in</h2>
+          </div>
+          <button aria-label="Close login" className="ui-button ui-button--icon ui-button--ghost" onClick={onClose} type="button">
+            x
+          </button>
+        </header>
 
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0 scale-95"
-            enterTo="opacity-100 scale-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100 scale-100"
-            leaveTo="opacity-0 scale-95"
-          >
-            <Dialog.Panel className="w-full max-w-sm rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl ring-1 ring-gray-200/50">
-              <div className="flex items-center justify-between mb-4">
-                <Dialog.Title className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  Enterprise BPM
-                </Dialog.Title>
-                <button
-                  onClick={onClose}
-                  className="rounded-full p-1 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
-              </div>
-              {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 transition-colors disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Signing in…' : 'Sign in'}
-                </button>
-                </form>
-              <div className="mt-4 border-t pt-4">
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Demo logins</p>
-                <ul className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-                  <li>Super Admin – admin@example.com</li>
-                  <li>Tenant Admin – tenant.admin@example.com</li>
-                  <li>Manager – manager@example.com</li>
-                  <li>Finance – finance@example.com</li>
-                  <li>Requester – requester@example.com</li>
-                </ul>
-              </div>
-              </Dialog.Panel>
-          </Transition.Child>
+        <form className="login-modal__form" onSubmit={handleSubmit}>
+          <label>
+            Email
+            <input autoComplete="email" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+          </label>
+          <label>
+            Password
+            <input
+              autoComplete="current-password"
+              required
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+          {error ? <p className="error">{error}</p> : null}
+          <button disabled={isSubmitting} type="submit">
+            {isSubmitting ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+
+        <div className="demo-logins">
+          <p>Demo logins</p>
+          {demoUsers.map((user) => (
+            <button
+              disabled={isSubmitting}
+              key={user.email}
+              onClick={() => submitCredentials(user.email, "ChangeMe123!")}
+              type="button"
+            >
+              <span>{user.role}</span>
+              <small>{user.email}</small>
+            </button>
+          ))}
         </div>
-      </Dialog>
-    </Transition.Root>
+      </section>
+    </div>
   );
 };

@@ -1,6 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { getTenantDomainFromHost } from "@/lib/tenant";
+
+function getTenantDomainFromHost(host: string | null) {
+  if (!host) return null;
+
+  const hostname = host.split(":")[0];
+  const parts = hostname.split(".");
+
+  if (hostname === "localhost" || hostname === "127.0.0.1" || parts.length < 3) {
+    return null;
+  }
+
+  return parts[0] || null;
+}
 
 export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
@@ -27,5 +39,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth).*)"],
+  matcher: ["/((?!$|login|unauthorized|_next/static|_next/image|favicon.ico|api).*)"],
 };
