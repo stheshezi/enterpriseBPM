@@ -112,26 +112,38 @@ async function main() {
   // -------------------------------------------------------
   // Create a demo travel request so the UI has something to show
   // -------------------------------------------------------
-  await prisma.travelRequest.create({
-    data: {
-      requestNumber: 'TR-001',
+  await prisma.travelRequest.upsert({
+    where: { requestNumber: "TR-001" },
+    update: {
       requesterId: admin.id,
       tenantId: tenant.id,
-      department: 'Engineering',
-      destination: 'New York',
-      travelType: 'Business',
+      department: "Engineering",
+      destination: "New York",
+      travelType: "Business",
+      purpose: "Demo conference attendance",
+      estimatedCost: 1200,
+      costCenter: "CC100",
+      status: "DRAFT",
+    },
+    create: {
+      requestNumber: "TR-001",
+      requesterId: admin.id,
+      tenantId: tenant.id,
+      department: "Engineering",
+      destination: "New York",
+      travelType: "Business",
       startDate: new Date(),
       endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // +3 days
-      purpose: 'Demo conference attendance',
+      purpose: "Demo conference attendance",
       estimatedCost: 1200,
-      costCenter: 'CC100',
-      status: 'DRAFT',
+      costCenter: "CC100",
+      status: "DRAFT",
     },
   });
 
   console.log('✅ Demo TravelRequest TR-001 created');
 
-  console.log(`Login with email: ${admin.email} and password: ${process.env.SUPER_ADMIN_PASSWORD ?? 'ChangeMe123!'}`);
+  console.log(`Login with email: ${admin.email} and password: ${process.env.SUPER_ADMIN_PASSWORD ?? "ChangeMe123!"}`);
 }
 
 main()

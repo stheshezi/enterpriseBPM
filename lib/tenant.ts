@@ -20,7 +20,7 @@ export function getTenantDomainFromHost(host: string | null) {
 }
 
 export async function getTenantContextFromHeaders(): Promise<TenantContext> {
-  const headerBag = headers();
+  const headerBag = await headers();
   const tenantId = headerBag.get("x-tenant-id");
   const tenantDomain = headerBag.get("x-tenant-domain");
 
