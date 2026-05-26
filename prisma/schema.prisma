@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
 }
 
 enum RequestStatus {
@@ -50,7 +50,7 @@ enum FieldType {
 }
 
 model Tenant {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @map("_id")
   name      String   @unique
   domain    String?
   createdAt DateTime @default(now())
@@ -66,7 +66,7 @@ model Tenant {
 }
 
 model User {
-  id           String   @id @default(uuid())
+  id           String   @id @default(uuid()) @map("_id")
   email        String   @unique
   passwordHash String?
   firstName    String?
@@ -84,7 +84,7 @@ model User {
 }
 
 model Role {
-  id       String @id @default(uuid())
+  id       String @id @default(uuid()) @map("_id")
   name     String @unique
   tenantId String
 
@@ -93,17 +93,18 @@ model Role {
 }
 
 model UserRole {
+  id     String @id @default(uuid()) @map("_id")
   userId String
   roleId String
 
   user User @relation(fields: [userId], references: [id])
   role Role @relation(fields: [roleId], references: [id])
 
-  @@id([userId, roleId])
+  @@unique([userId, roleId])
 }
 
 model TravelRequest {
-  id            String        @id @default(uuid())
+  id            String        @id @default(uuid()) @map("_id")
   requestNumber String        @unique
   requesterId   String
   tenantId      String
@@ -127,7 +128,7 @@ model TravelRequest {
 }
 
 model WorkflowTask {
-  id          String     @id @default(uuid())
+  id          String     @id @default(uuid()) @map("_id")
   requestId   String
   assigneeId  String?
   tenantId    String
@@ -145,7 +146,7 @@ model WorkflowTask {
 }
 
 model AuditLog {
-  id              String      @id @default(uuid())
+  id              String      @id @default(uuid()) @map("_id")
   tenantId        String
   actorUserId     String?
   travelRequestId String?
@@ -166,7 +167,7 @@ model AuditLog {
 }
 
 model Notification {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @map("_id")
   tenantId  String
   userId    String?
   type      String
@@ -179,7 +180,7 @@ model Notification {
 }
 
 model Form {
-  id          String   @id @default(uuid())
+  id          String   @id @default(uuid()) @map("_id")
   slug        String   @unique
   name        String
   description String?
@@ -192,7 +193,7 @@ model Form {
 }
 
 model FormField {
-  id         String    @id @default(uuid())
+  id         String    @id @default(uuid()) @map("_id")
   formId     String
   label      String
   name       String

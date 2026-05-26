@@ -6,8 +6,9 @@ import { getTenantContextFromHeaders } from "@/lib/tenant";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -18,7 +19,7 @@ export async function GET(
 
   try {
     const task = await prisma.workflowTask.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         request: {
           include: {
@@ -50,8 +51,9 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -63,7 +65,7 @@ export async function PATCH(
 
   try {
     const task = await prisma.workflowTask.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { request: true },
     });
 
@@ -76,7 +78,7 @@ export async function PATCH(
     }
 
     const updatedTask = await prisma.workflowTask.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: body.status,
         completedAt: body.status === "COMPLETED" ? new Date() : null,

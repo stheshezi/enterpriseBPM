@@ -7,8 +7,9 @@ import { PERMISSIONS } from "@/config/permissions";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -19,7 +20,7 @@ export async function GET(
 
   try {
     const travelRequest = await prisma.travelRequest.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         requester: true,
         tenant: true,
