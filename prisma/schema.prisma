@@ -7,94 +7,181 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Multi-tenant isolation: each model includes tenantId and references Tenant
+enum RequestStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  DONE
+  CANCELLED
+}
+
 model Tenant {
-  id             String          @id @default(uuid())
-  name           String
-  createdAt      DateTime        @default(now())
-  // relations
-  users          User[]
-  roles          Role[]
-  travelRequests TravelRequest[]
-  workflowTasks  WorkflowTask[]
-  auditLogs      AuditLog[]
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users         User[]
+  roles         Role[]
+  requestTypes  RequestType[]
+  requests      Request[]
+  workflowTasks WorkflowTask[]
+  auditLogs     AuditLog[]
 }
 
 model User {
   id           String   @id @default(uuid())
-  email        String   @unique
+  email        String
   passwordHash String
   name         String?
   createdAt    DateTime @default(now())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
 
-  roles     Role[]     @relation("UserRoles")
-  auditLogs AuditLog[] @relation("CreatedBy")
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
+  roles         Role[]         @relation("UserRoles")
+  auditLogs     AuditLog[]     @relation("CreatedBy")
   assignedTasks WorkflowTask[]
+  createdRequests Request[]
+
+  @@unique([tenantId, email])
 }
 
 model Role {
-  id          String       @id @default(uuid())
-  name        String
-  tenantId    String
-  tenant      Tenant       @relation(fields: [tenantId], references: [id])
-  // many-to-many via RolePermission
+  id       String @id @default(uuid())
+  name     String
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
   permissions Permission[] @relation("RolePermissions")
   users       User[]       @relation("UserRoles")
+
+  @@unique([tenantId, name])
 }
 
 model Permission {
   id          String  @id @default(uuid())
-  action      String // e.g., "create:travelRequest"
+  action      String
+  resource    String
   description String?
-  // many-to-many via RolePermission
-  roles       Role[]  @relation("RolePermissions")
+
+  roles Role[] @relation("RolePermissions")
+
+  @@unique([action, resource])
 }
 
-// Junction tables for many-to-many relations
-// Implicit many‑to‑many between User and Role – Prisma will generate the join table.
+model RequestType {
+  id          String  @id @default(uuid())
+  name        String
+  code        String
+  description String?
+  isActive    Boolean @default(true)
 
-// Implicit many‑to‑many between Role and Permission – Prisma will generate the join table.
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
-model TravelRequest {
-  id          String         @id @default(uuid())
+  requests Request[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, code])
+}
+
+model Request {
+  id          String        @id @default(uuid())
   title       String
   description String?
-  status      String         @default("PENDING")
-  createdAt   DateTime       @default(now())
-  tenantId    String
-  tenant      Tenant         @relation(fields: [tenantId], references: [id])
-  // relations
-  tasks       WorkflowTask[]
-  // auditLogs removed – use generic AuditLog relation from AuditLog side.
+  status      RequestStatus @default(DRAFT)
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  requestTypeId String
+  requestType   RequestType @relation(fields: [requestTypeId], references: [id])
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  tasks WorkflowTask[]
+
+  travelDetails TravelRequestDetails?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([requestTypeId])
+  @@index([createdById])
+}
+
+model TravelRequestDetails {
+  id String @id @default(uuid())
+
+  requestId String  @unique
+  request   Request @relation(fields: [requestId], references: [id])
+
+  origin          String?
+  destination     String
+  departureDate   DateTime
+  returnDate      DateTime?
+  purpose         String?
+  estimatedAmount Decimal? @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WorkflowTask {
-  id              String        @id @default(uuid())
-  name            String
-  status          String        @default("TODO")
-  assigneeId      String?
-  // optional relation to User (assignee)
-  assignee        User?         @relation(fields: [assigneeId], references: [id])
-  travelRequestId String
-  travelRequest   TravelRequest @relation(fields: [travelRequestId], references: [id])
-  tenantId        String
-  tenant          Tenant        @relation(fields: [tenantId], references: [id])
-  createdAt       DateTime      @default(now())
-  // auditLogs removed – use generic AuditLog relation from AuditLog side.
+  id       String     @id @default(uuid())
+  name     String
+  status   TaskStatus @default(TODO)
+  priority Int        @default(0)
+
+  assigneeId String?
+  assignee   User? @relation(fields: [assigneeId], references: [id])
+
+  requestId String
+  request   Request @relation(fields: [requestId], references: [id])
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([assigneeId])
+  @@index([requestId])
 }
 
 model AuditLog {
   id        String   @id @default(uuid())
-  action    String // e.g., "CREATE", "UPDATE"
-  entity    String // model name
-  entityId  String // id of the affected record
+  action    String
+  entity    String
+  entityId  String
   timestamp DateTime @default(now())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  // optional creator user
-  userId    String?
-  user      User?    @relation("CreatedBy", fields: [userId], references: [id])
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  userId String?
+  user   User? @relation("CreatedBy", fields: [userId], references: [id])
+
+  oldData Json?
+  newData Json?
+
+  @@index([tenantId, entity])
+  @@index([entityId])
 }
