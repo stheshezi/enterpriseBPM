@@ -1,3 +1,5 @@
+"use client";
+
 import { Table } from "@/components/ui";
 import { BpmStatus, StatusBadge } from "@/components/workflow";
 
@@ -17,17 +19,15 @@ export interface RequestTableProps {
   rows: RequestTableRow[];
   isLoading?: boolean;
   error?: string;
-  rowActions?: (row: RequestTableRow) => React.ReactNode;
 }
 
-export function RequestTable({ rows, isLoading, error, rowActions }: RequestTableProps) {
+export function RequestTable({ rows, isLoading, error }: RequestTableProps) {
   return (
     <Table<RequestTableRow>
       data={rows}
       isLoading={isLoading}
       error={error}
       getRowKey={(row) => row.id}
-      rowActions={rowActions}
       columns={[
         { key: "requestNumber", header: "Request Number", sortable: true },
         { key: "requester", header: "Requester", sortable: true },

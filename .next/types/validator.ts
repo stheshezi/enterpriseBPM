@@ -380,6 +380,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/api/authority/levels/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/authority/levels">> = Specific
+  const handler = {} as typeof import("../../app/api/authority/levels/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/delegations/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/delegations">> = Specific
+  const handler = {} as typeof import("../../app/api/delegations/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/api/health/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/health">> = Specific

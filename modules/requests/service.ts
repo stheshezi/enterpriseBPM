@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { workflowEngine } from "@/modules/workflow/workflow-engine";
 
 export const travelRequestSchema = z
   .object({
@@ -28,32 +28,5 @@ export async function createSubmittedTravelRequest({
   requesterId: string;
   tenantId: string;
 }) {
-  const requestNumber = `TR-${Date.now()}`;
-
-  return prisma.travelRequest.create({
-    data: {
-      ...input,
-      requestNumber,
-      requesterId,
-      tenantId,
-      status: "SUBMITTED",
-      currentStep: "MANAGER_APPROVAL",
-      auditLogs: {
-        create: {
-          tenantId,
-          actorUserId: requesterId,
-          entityType: "TravelRequest",
-          action: "REQUEST_SUBMITTED",
-          newValue: JSON.stringify({ requestNumber }),
-        },
-      },
-      tasks: {
-        create: {
-          tenantId,
-          stepName: "MANAGER_APPROVAL",
-        },
-      },
-    },
-    include: { tasks: true },
-  });
+  return workflowEngine.submitRequest({ input, requesterId, tenantId });
 }

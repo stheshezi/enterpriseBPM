@@ -423,6 +423,437 @@ button:hover:not(:disabled) {
 .login-modal h2 { margin: 0; }
 .login-modal__form { display: grid; gap: 14px; }
 
+.wms-home,
+.it-home {
+  display: grid;
+  gap: 16px;
+}
+
+.work-center {
+  display: grid;
+  gap: 18px;
+}
+
+.work-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 22px;
+}
+
+.work-hero p {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.work-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.work-queue-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.work-queue {
+  display: grid;
+  gap: 8px;
+  min-height: 150px;
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px;
+  text-decoration: none;
+}
+
+.work-queue:hover {
+  border-color: var(--accent);
+}
+
+.work-queue--warning { border-left-color: #b54708; }
+.work-queue--danger { border-left-color: var(--danger); }
+.work-queue--info { border-left-color: #075985; }
+.work-queue--neutral { border-left-color: #667085; }
+
+.work-queue span,
+.request-type-list span,
+.help-action-list span,
+.delegation-state span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.work-queue > span {
+  font-weight: 800;
+}
+
+.work-queue strong {
+  font-size: 2.25rem;
+}
+
+.work-queue p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.work-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 16px;
+}
+
+.work-panel {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px;
+}
+
+.work-panel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.work-panel h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.request-type-list,
+.help-action-list {
+  display: grid;
+  gap: 10px;
+}
+
+.request-type-list a,
+.help-action-list a {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  padding: 14px;
+  text-decoration: none;
+}
+
+.request-type-list a:hover,
+.help-action-list a:hover {
+  border-color: var(--accent);
+  background: var(--soft);
+}
+
+.status-ladder {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.status-ladder span {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--muted);
+  font-weight: 750;
+  padding: 14px;
+}
+
+.status-ladder strong {
+  color: var(--foreground);
+  font-size: 1.5rem;
+}
+
+.delegation-panel,
+.help-panel {
+  align-self: start;
+}
+
+.delegation-state {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  padding: 14px;
+}
+
+.wms-home--accessible {
+  font-size: 1.08rem;
+}
+
+.wms-home--accessible a:focus,
+.wms-home--accessible button:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.wms-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.wms-shortcuts a,
+.wms-shortcuts button,
+.wms-list-actions a,
+.wms-list-actions button {
+  min-height: auto;
+  border: 0;
+  background: transparent;
+  color: var(--accent-dark);
+  font-size: inherit;
+  font-weight: 700;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.wms-banner,
+.it-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px;
+}
+
+.wms-banner__actions,
+.wms-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.wms-area-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 6px;
+}
+
+.wms-area-nav a {
+  border-radius: 6px;
+  color: var(--muted);
+  font-weight: 750;
+  padding: 9px 12px;
+  text-decoration: none;
+}
+
+.wms-area-nav a:hover,
+.wms-area-nav a.is-active {
+  background: var(--soft);
+  color: var(--foreground);
+}
+
+.wms-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+}
+
+.wms-main,
+.wms-side,
+.it-ops-grid {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.wms-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.wms-panel > header {
+  border-bottom: 1px solid var(--border);
+  background: var(--soft);
+  padding: 10px 14px;
+}
+
+.wms-panel h2 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.wms-panel > :not(header) {
+  margin: 14px;
+}
+
+.wms-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.wms-table,
+.wms-guides {
+  overflow-x: auto;
+}
+
+.wms-table__head,
+.wms-guides__head,
+.wms-guides__row {
+  display: grid;
+  min-width: 620px;
+  gap: 12px;
+  align-items: center;
+}
+
+.wms-table__head {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.wms-guides__head,
+.wms-guides__row {
+  grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.2fr);
+}
+
+.wms-table__head,
+.wms-guides__head {
+  border-bottom: 1px solid var(--border);
+  color: #475467;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding-bottom: 8px;
+}
+
+.wms-guides__row {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+
+.wms-guides__row:last-child {
+  border-bottom: 0;
+}
+
+.wms-guides__row a {
+  color: var(--accent-dark);
+  font-weight: 750;
+}
+
+.wms-table p,
+.wms-guides__row span,
+.it-hero p,
+.it-use-case p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.wms-table p {
+  margin: 14px 0 0;
+}
+
+.wms-stats {
+  display: grid;
+  gap: 8px;
+}
+
+.wms-stats span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.wms-stats strong {
+  font-size: 1.5rem;
+}
+
+.wms-checklist {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.it-hero p {
+  max-width: 720px;
+  margin: 8px 0 0;
+}
+
+.it-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.it-use-case {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px;
+  text-decoration: none;
+}
+
+.it-use-case:hover {
+  border-color: var(--accent);
+}
+
+.it-use-case span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.it-use-case strong {
+  font-size: 2.2rem;
+}
+
+.it-use-case p {
+  margin: 0;
+}
+
+.it-ops-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.service-map {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.service-map span {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  font-weight: 800;
+  padding: 14px;
+}
+
 .layout-sidebar { position: sticky; top: 0; height: 100vh; flex: 0 0 auto; background: var(--sidebar); overflow: hidden; }
 .layout-sidebar__brand { display: flex; align-items: center; gap: 12px; }
 .layout-sidebar__brand > span { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; background: var(--accent); color: #ffffff; font-weight: 900; }
@@ -481,8 +912,22 @@ button:hover:not(:disabled) {
   .landing-hero,
   .landing-grid,
   .table-row,
-  .detail-grid {
+  .detail-grid,
+  .work-queue-grid,
+  .work-layout,
+  .status-ladder,
+  .wms-grid,
+  .it-grid,
+  .it-ops-grid,
+  .service-map {
     grid-template-columns: 1fr;
+  }
+
+  .wms-banner,
+  .work-hero,
+  .it-hero {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .landing-nav {

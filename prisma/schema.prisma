@@ -10,6 +10,10 @@ datasource db {
 enum RequestStatus {
   DRAFT
   SUBMITTED
+  PENDING_LM
+  PENDING_BUMA
+  PENDING_C5
+  PENDING_CEO
   MANAGER_APPROVAL
   FINANCE_APPROVAL
   APPROVED
@@ -33,9 +37,49 @@ enum AuditAction {
   REQUEST_REJECTED
   REQUEST_CANCELLED
   STATUS_CHANGED
+  APPROVAL_ASSIGNED
+  APPROVAL_COMPLETED
+  APPROVAL_DELEGATED
+  ESCALATION_TRIGGERED
+  DELEGATION_CREATED
+  DELEGATION_REVOKED
   USER_LOGIN
   USER_CREATED
   ROLE_UPDATED
+}
+
+enum WorkflowAction {
+  SUBMIT
+  APPROVE
+  REJECT
+  CANCEL
+  RETURN
+  ESCALATE
+}
+
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+  RETURNED
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  REASSIGNED
+  EXPIRED
+}
+
+enum WorkflowEventType {
+  REQUEST_SUBMITTED
+  APPROVAL_ASSIGNED
+  APPROVAL_COMPLETED
+  APPROVAL_REJECTED
+  WORKFLOW_COMPLETED
+  WORKFLOW_ESCALATED
+  DELEGATION_ACTIVATED
+  STATE_TRANSITIONED
 }
 
 enum FieldType {
@@ -63,24 +107,51 @@ model Tenant {
   auditLogs      AuditLog[]
   notifications  Notification[]
   forms          Form[]
+  departments    Department[]
+  authorityLevels AuthorityLevel[]
+  delegationsFrom Delegation[] @relation("DelegationTenant")
+  workflowTransitions WorkflowTransition[]
+  workflowDefinitions WorkflowDefinition[]
+  workflowPolicies WorkflowPolicy[]
+  workflowEvents WorkflowEvent[]
+  approvalSnapshots ApprovalSnapshot[]
+  approvalActions ApprovalAction[]
+  workflowAssignments WorkflowAssignment[]
 }
 
 model User {
   id           String   @id @default(uuid()) @map("_id")
+  employeeNumber String?
   email        String   @unique
   passwordHash String?
   firstName    String?
   lastName     String?
   tenantId     String
+  departmentId String?
+  managerId    String?
+  authorityLevelId String?
+  adGuid       String?
+  active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  department     Department?     @relation(fields: [departmentId], references: [id])
+  manager        User?           @relation("UserManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  directReports  User[]          @relation("UserManager")
+  authorityLevel AuthorityLevel? @relation(fields: [authorityLevelId], references: [id])
   roles          UserRole[]
   travelRequests TravelRequest[]
   assignedTasks  WorkflowTask[]
+  ownedAuthorityTasks WorkflowTask[] @relation("TaskAuthorityOwner")
+  delegatedTaskAuthority WorkflowTask[] @relation("TaskDelegatedFrom")
   auditLogs      AuditLog[]
   notifications  Notification[]
+  delegatedFrom  Delegation[]    @relation("DelegatedFrom")
+  delegatedTo    Delegation[]    @relation("DelegatedTo")
+  approvalActionsTaken ApprovalAction[] @relation("ApprovalActionActor")
+  approvalAuthorityOwned ApprovalAction[] @relation("ApprovalActionAuthorityOwner")
+  workflowAssignments WorkflowAssignment[]
 }
 
 model Role {
@@ -108,6 +179,8 @@ model TravelRequest {
   requestNumber String        @unique
   requesterId   String
   tenantId      String
+  departmentId  String?
+  requiredAuthorityLevelId String?
   department    String
   destination   String
   travelType    String
@@ -118,13 +191,20 @@ model TravelRequest {
   costCenter    String
   status        RequestStatus @default(DRAFT)
   currentStep   String?
+  version       Int           @default(0)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   requester User           @relation(fields: [requesterId], references: [id])
   tenant    Tenant         @relation(fields: [tenantId], references: [id])
+  departmentRef Department? @relation(fields: [departmentId], references: [id])
+  requiredAuthorityLevel AuthorityLevel? @relation(fields: [requiredAuthorityLevelId], references: [id])
   tasks     WorkflowTask[]
   auditLogs AuditLog[]
+  approvalActions ApprovalAction[]
+  workflowAssignments WorkflowAssignment[]
+  workflowEvents WorkflowEvent[]
+  approvalSnapshots ApprovalSnapshot[]
 }
 
 model WorkflowTask {
@@ -132,6 +212,9 @@ model WorkflowTask {
   requestId   String
   assigneeId  String?
   tenantId    String
+  authorityLevelId String?
+  authorityOwnerUserId String?
+  delegatedFromUserId String?
   stepName    String
   status      TaskStatus @default(PENDING)
   dueAt       DateTime?
@@ -141,8 +224,12 @@ model WorkflowTask {
 
   request   TravelRequest @relation(fields: [requestId], references: [id])
   assignee  User?         @relation(fields: [assigneeId], references: [id])
+  authorityLevel AuthorityLevel? @relation(fields: [authorityLevelId], references: [id])
+  authorityOwner User? @relation("TaskAuthorityOwner", fields: [authorityOwnerUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  delegatedFrom User? @relation("TaskDelegatedFrom", fields: [delegatedFromUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tenant    Tenant        @relation(fields: [tenantId], references: [id])
   auditLogs AuditLog[]
+  workflowAssignments WorkflowAssignment[]
 }
 
 model AuditLog {
@@ -156,6 +243,10 @@ model AuditLog {
   action          AuditAction
   oldValue        String?
   newValue        String?
+  previousState   String?
+  nextState       String?
+  authorityOwnerUserId String?
+  delegated       Boolean @default(false)
   ipAddress       String?
   userAgent       String?
   createdAt       DateTime    @default(now())
@@ -206,4 +297,224 @@ model FormField {
   updatedAt  DateTime  @updatedAt
 
   form Form @relation(fields: [formId], references: [id])
+}
+
+model Department {
+  id                 String   @id @default(uuid()) @map("_id")
+  tenantId           String
+  name               String
+  parentDepartmentId String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tenant             Tenant       @relation(fields: [tenantId], references: [id])
+  parentDepartment   Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  childDepartments   Department[] @relation("DepartmentHierarchy")
+  users              User[]
+  travelRequests     TravelRequest[]
+
+  @@unique([tenantId, name])
+}
+
+model AuthorityLevel {
+  id            String   @id @default(uuid()) @map("_id")
+  tenantId      String
+  code          String
+  name          String
+  rankOrder     Int
+  approvalLimit Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant @relation(fields: [tenantId], references: [id])
+  users         User[]
+  requests      TravelRequest[]
+  workflowTasks WorkflowTask[]
+  delegations   Delegation[]
+  transitionsFrom WorkflowTransition[] @relation("TransitionRequiredAuthority")
+  assignments   WorkflowAssignment[]
+
+  @@unique([tenantId, code])
+  @@unique([tenantId, rankOrder])
+}
+
+model Delegation {
+  id                   String   @id @default(uuid()) @map("_id")
+  tenantId             String
+  delegatedFromUserId  String
+  delegatedToUserId    String
+  authorityLevelId     String
+  startDate            DateTime
+  endDate              DateTime
+  reason               String?
+  active               Boolean  @default(true)
+  createdBy            String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tenant               Tenant         @relation("DelegationTenant", fields: [tenantId], references: [id])
+  delegatedFrom        User           @relation("DelegatedFrom", fields: [delegatedFromUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  delegatedTo          User           @relation("DelegatedTo", fields: [delegatedToUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  authorityLevel       AuthorityLevel @relation(fields: [authorityLevelId], references: [id])
+
+  @@index([tenantId, delegatedFromUserId, authorityLevelId, active])
+}
+
+model WorkflowTransition {
+  id                       String         @id @default(uuid()) @map("_id")
+  tenantId                 String
+  currentState             RequestStatus
+  action                   WorkflowAction
+  nextState                RequestStatus
+  requiredAuthorityLevelId String?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+
+  tenant                   Tenant          @relation(fields: [tenantId], references: [id])
+  requiredAuthorityLevel   AuthorityLevel? @relation("TransitionRequiredAuthority", fields: [requiredAuthorityLevelId], references: [id])
+
+  @@unique([tenantId, currentState, action])
+}
+
+model ApprovalAction {
+  id                   String           @id @default(uuid()) @map("_id")
+  tenantId             String
+  requestId            String
+  workflowTaskId       String?
+  actionByUserId       String
+  authorityOwnerUserId String?
+  delegated            Boolean          @default(false)
+  action               ApprovalDecision
+  comments             String?
+  previousState        String?
+  nextState            String?
+  actionTimestamp      DateTime         @default(now())
+
+  tenant               Tenant        @relation(fields: [tenantId], references: [id])
+  request              TravelRequest @relation(fields: [requestId], references: [id])
+  actionByUser         User          @relation("ApprovalActionActor", fields: [actionByUserId], references: [id])
+  authorityOwnerUser   User?         @relation("ApprovalActionAuthorityOwner", fields: [authorityOwnerUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([tenantId, requestId, actionTimestamp])
+}
+
+model WorkflowAssignment {
+  id               String           @id @default(uuid()) @map("_id")
+  tenantId         String
+  requestId        String
+  workflowTaskId   String?
+  assignedToUserId String
+  authorityLevelId String?
+  assignedAt       DateTime         @default(now())
+  status           AssignmentStatus @default(ACTIVE)
+
+  tenant           Tenant          @relation(fields: [tenantId], references: [id])
+  request          TravelRequest   @relation(fields: [requestId], references: [id])
+  workflowTask     WorkflowTask?   @relation(fields: [workflowTaskId], references: [id])
+  assignedToUser   User            @relation(fields: [assignedToUserId], references: [id])
+  authorityLevel   AuthorityLevel? @relation(fields: [authorityLevelId], references: [id])
+
+  @@index([tenantId, requestId, status])
+  @@index([tenantId, assignedToUserId, status])
+}
+
+model WorkflowDefinition {
+  id          String   @id @default(uuid()) @map("_id")
+  tenantId    String
+  code        String
+  name        String
+  requestType String
+  active      Boolean  @default(true)
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id])
+  nodes       WorkflowNode[]
+  edges       WorkflowEdge[]
+  policies    WorkflowPolicy[]
+
+  @@unique([tenantId, code, version])
+}
+
+model WorkflowNode {
+  id                   String   @id @default(uuid()) @map("_id")
+  workflowDefinitionId String
+  code                 String
+  name                 String
+  authorityLevelId     String?
+  parallelGroup        String?
+  terminal             Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  workflowDefinition   WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id])
+
+  @@unique([workflowDefinitionId, code])
+}
+
+model WorkflowEdge {
+  id                   String         @id @default(uuid()) @map("_id")
+  workflowDefinitionId String
+  fromNodeCode         String
+  toNodeCode           String
+  action               WorkflowAction
+  condition            String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  workflowDefinition   WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id])
+
+  @@index([workflowDefinitionId, fromNodeCode, action])
+}
+
+model WorkflowPolicy {
+  id                   String   @id @default(uuid()) @map("_id")
+  tenantId             String
+  workflowDefinitionId String?
+  code                 String
+  name                 String
+  expression           String
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tenant               Tenant @relation(fields: [tenantId], references: [id])
+  workflowDefinition   WorkflowDefinition? @relation(fields: [workflowDefinitionId], references: [id])
+
+  @@unique([tenantId, code])
+}
+
+model ApprovalSnapshot {
+  id              String   @id @default(uuid()) @map("_id")
+  tenantId        String
+  requestId       String
+  snapshotVersion Int      @default(1)
+  hierarchy       String
+  authorityChain  String
+  policyContext   String?
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant @relation(fields: [tenantId], references: [id])
+  request         TravelRequest @relation(fields: [requestId], references: [id])
+
+  @@index([tenantId, requestId, createdAt])
+}
+
+model WorkflowEvent {
+  id             String            @id @default(uuid()) @map("_id")
+  tenantId       String
+  requestId      String?
+  workflowTaskId String?
+  actorUserId    String?
+  type           WorkflowEventType
+  previousState  String?
+  nextState      String?
+  payload        String?
+  createdAt      DateTime          @default(now())
+
+  tenant         Tenant @relation(fields: [tenantId], references: [id])
+  request        TravelRequest? @relation(fields: [requestId], references: [id])
+
+  @@index([tenantId, requestId, createdAt])
 }

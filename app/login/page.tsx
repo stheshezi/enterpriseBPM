@@ -29,7 +29,7 @@ function LoginForm() {
       return;
     }
 
-    router.push(searchParams.get("callbackUrl") ?? "/travel-requests/new");
+    router.push(searchParams.get("callbackUrl") ?? "/");
     router.refresh();
   }
 
@@ -53,6 +53,7 @@ function LoginForm() {
   const demoUsers = [
     { role: "Super Admin", email: "admin@example.com" },
     { role: "Tenant Admin", email: "tenant.admin@example.com" },
+    { role: "IT Support", email: "it.support@example.com" },
     { role: "Manager", email: "manager@example.com" },
     { role: "Finance", email: "finance@example.com" },
     { role: "Requester", email: "requester@example.com" },

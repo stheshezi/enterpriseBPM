@@ -13,12 +13,13 @@ interface LoginModalProps {
 const demoUsers = [
   { role: "Super Admin", email: "admin@example.com" },
   { role: "Tenant Admin", email: "tenant.admin@example.com" },
+  { role: "IT Support", email: "it.support@example.com" },
   { role: "Manager", email: "manager@example.com" },
   { role: "Finance", email: "finance@example.com" },
   { role: "Requester", email: "requester@example.com" },
 ];
 
-export const LoginModal = ({ open, onClose, callbackUrl = "/travel-requests/new" }: LoginModalProps) => {
+export const LoginModal = ({ open, onClose, callbackUrl = "/" }: LoginModalProps) => {
   const router = useRouter();
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("ChangeMe123!");

@@ -25,6 +25,20 @@ export const ROLE_DEFINITIONS: Record<AppRole, RoleDefinition> = {
       PERMISSIONS.AUDIT_VIEW,
     ],
   },
+  IT_SUPPORT: {
+    name: "IT_SUPPORT",
+    label: "IT Support",
+    description: "Supports users, monitors workflow health, and investigates access or routing issues.",
+    permissions: [
+      PERMISSIONS.USERS_VIEW,
+      PERMISSIONS.USERS_MANAGE,
+      PERMISSIONS.REQUESTS_VIEW_TENANT,
+      PERMISSIONS.TASKS_VIEW_ASSIGNED,
+      PERMISSIONS.REPORTS_VIEW,
+      PERMISSIONS.AUDIT_VIEW,
+      PERMISSIONS.SYSTEM_ADMIN,
+    ],
+  },
   MANAGER: {
     name: "MANAGER",
     label: "Manager",

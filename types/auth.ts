@@ -1,4 +1,4 @@
-export type AppRole = "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "FINANCE" | "REQUESTER";
+export type AppRole = "SUPER_ADMIN" | "ADMIN" | "IT_SUPPORT" | "MANAGER" | "FINANCE" | "REQUESTER";
 
 export type AppPermission =
   | "tenant.manage"

@@ -12,6 +12,8 @@
   "/api/approvals/decide/route": "app/api/approvals/decide/route.js",
   "/api/approvals/list/route": "app/api/approvals/list/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/authority/levels/route": "app/api/authority/levels/route.js",
+  "/api/delegations/route": "app/api/delegations/route.js",
   "/api/health/route": "app/api/health/route.js",
   "/api/reports/summary/route": "app/api/reports/summary/route.js",
   "/api/tasks/[id]/route": "app/api/tasks/[id]/route.js",

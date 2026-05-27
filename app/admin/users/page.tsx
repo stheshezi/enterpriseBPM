@@ -19,11 +19,7 @@ export default async function AdminUsersPage() {
       />
       <UserTable
         rows={users}
-        rowActions={(row) => (
-          <Link href={`/admin/users/${row.id}`}>
-            <Button variant="outline" size="sm">View</Button>
-          </Link>
-        )}
+        detailHrefBase="/admin/users"
       />
     </PageContainer>
   );
