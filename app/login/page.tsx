@@ -16,20 +16,17 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
-
       if (result?.error) {
         setError(result.error || "Invalid email or password");
         setIsLoading(false);
         return;
       }
-
       if (result?.ok) {
         router.push("/");
         router.refresh();
@@ -41,93 +38,75 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="text-blue-600 font-bold text-2xl mb-2">Enterprise BPM</div>
-            <h1 className="text-2xl font-bold text-gray-900">Sign in</h1>
-            <p className="text-gray-600 mt-2">Business Process Management Platform</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
+      <div className="glass-card w-full max-w-md p-8 space-y-6 backdrop-blur-lg bg-white/10 border border-white/20 rounded-xl shadow-2xl">
+        {/* Header */}
+        <div className="text-center">
+          <div className="text-white font-bold text-3xl mb-2">Enterprise BPM</div>
+          <h1 className="text-2xl font-bold text-white">Sign in</h1>
+          <p className="text-gray-200 mt-2">Business Process Management Platform</p>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 flex items-center gap-2 p-3 bg-red-900/30 border border-red-700 rounded-md text-red-200">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm">{error}</p>
           </div>
+        )}
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-md">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <p className="text-red-700 text-sm">{error}</p>
-            </div>
-          )}
-
-          {/* Demo Credentials */}
-          <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm font-semibold text-blue-900 mb-2">Demo Credentials</p>
-            <div className="text-xs text-blue-800 space-y-1">
-              <p><span className="font-mono font-semibold">Email:</span> admin@example.com</p>
-              <p><span className="font-mono font-semibold">Password:</span> ChangeMe123!</p>
-            </div>
-          </div>
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="admin@example.com"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="Enter your password"
-              />
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition duration-200 flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </button>
-          </form>
-
-          {/* Footer */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-center text-xs text-gray-600">
-              For local development only. Production requires secure authentication.
-            </p>
+        {/* Demo Credentials */}
+        <div className="mb-4 p-3 bg-blue-900/30 border border-blue-700 rounded-md text-blue-200">
+          <p className="font-semibold mb-2">Demo Credentials</p>
+          <div className="text-xs space-y-1">
+            <p><span className="font-mono font-semibold">Email:</span> admin@example.com</p>
+            <p><span className="font-mono font-semibold">Password:</span> ChangeMe123!</p>
           </div>
         </div>
+
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-1">Email Address</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoading}
+              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+              placeholder="admin@example.com"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-1">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoading}
+              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+              placeholder="Enter your password"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-md transition"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Sign In"
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

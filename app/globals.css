@@ -307,6 +307,14 @@ button:hover:not(:disabled) {
 .ui-button--link { background: transparent; color: var(--accent); min-height: auto; padding: 0; }
 .ui-spinner { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 999px; }
 
+.glass-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
 .ui-card { background: var(--panel); border-radius: 8px; padding: 20px; }
 .ui-card--bordered { border: 1px solid var(--border); }
 .ui-card--elevated { box-shadow: 0 16px 40px rgba(23, 32, 42, 0.08); }

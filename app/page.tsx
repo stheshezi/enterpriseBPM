@@ -9,129 +9,99 @@ export default function LandingPage() {
   const { data: session } = useSession();
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
+  // Authenticated view – simple dashboard shortcut
   if (session?.user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        {/* Navigation */}
-        <nav className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Enterprise BPM</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">{session.user.name}</span>
-              <Link href="/dashboard">
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">
-                  Dashboard
-                </button>
-              </Link>
-              <button
-                onClick={() => signOut()}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
-              >
-                Sign out
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 text-white">
+        <nav className="flex items-center justify-between px-8 py-4">
+          <h1 className="text-2xl font-bold">Enterprise BPM</h1>
+          <div className="flex items-center gap-4">
+            <span>{session.user.name}</span>
+            <Link href="/dashboard">
+              <button className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md transition">
+                Dashboard
               </button>
-            </div>
+            </Link>
+            <button onClick={() => signOut()} className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md transition">
+              Sign out
+            </button>
           </div>
         </nav>
-
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 py-16">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Welcome back, {session.user.name}!
-            </h2>
-            <p className="text-xl text-gray-600">
-              Your enterprise workflow management platform
-            </p>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Link href="/requests/new">
-              <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">New Request</h3>
-                <p className="text-gray-600">Submit a new travel request</p>
-              </div>
-            </Link>
-            <Link href="/requests">
-              <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">My Requests</h3>
-                <p className="text-gray-600">View and manage your requests</p>
-              </div>
-            </Link>
-            <Link href="/tasks">
-              <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">My Tasks</h3>
-                <p className="text-gray-600">Review pending approvals</p>
-              </div>
-            </Link>
-          </div>
+        <main className="max-w-4xl mx-auto py-24 text-center">
+          <h2 className="text-4xl font-bold mb-6">Welcome back, {session.user.name}!</h2>
+          <p className="text-lg mb-8">Your enterprise workflow hub is ready.</p>
+          <Link href="/dashboard">
+            <button className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold transition">
+              Go to Dashboard
+            </button>
+          </Link>
         </main>
       </div>
     );
   }
 
+  // Guest view – premium landing page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Enterprise BPM</h1>
-          <button
-            onClick={() => setLoginModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
-          >
-            Sign in
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 text-white">
+      {/* Header */}
+      <nav className="flex items-center justify-between px-8 py-4">
+        <h1 className="text-2xl font-bold">Enterprise BPM</h1>
+        <button
+          onClick={() => setLoginModalOpen(true)}
+          className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md transition"
+        >
+          Sign in
+        </button>
       </nav>
 
-      {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-4 py-16 text-center">
-        <h2 className="text-5xl font-bold text-gray-900 mb-6">
-          Enterprise Workflow Management
-        </h2>
-        <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-          Streamline your travel requests, approvals, and workflows with our
-          comprehensive business process management platform.
+      {/* Hero */}
+      <section className="max-w-4xl mx-auto text-center py-24">
+        <h2 className="text-5xl font-extrabold mb-6">Enterprise Workflow Management</h2>
+        <p className="text-xl max-w-2xl mx-auto mb-8">
+          Streamline your travel requests, approvals, and workflows with our comprehensive business process management platform.
         </p>
+        <button
+          onClick={() => setLoginModalOpen(true)}
+          className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold transition"
+        >
+          Get Started
+        </button>
+      </section>
 
-        {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
-          <div className="bg-white rounded-lg shadow p-8">
-            <div className="text-4xl mb-4">✈️</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Smart Requests</h3>
-            <p className="text-gray-600">
-              Intelligent travel request handling with multi-level approval workflows
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-8">
-            <div className="text-4xl mb-4">⚡</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Fast Approvals</h3>
-            <p className="text-gray-600">
-              Streamlined approval process with real-time notifications
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-8">
-            <div className="text-4xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Insights</h3>
-            <p className="text-gray-600">
-              Comprehensive reporting and analytics for better decision making
-            </p>
-          </div>
+      {/* Feature cards – glassmorphism */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4 pb-16">
+        <div className="glass-card p-6 backdrop-blur-lg bg-white/10 border border-white/20 rounded-xl text-center">
+          <div className="text-4xl mb-4">✈️</div>
+          <h3 className="text-xl font-semibold mb-2">Smart Requests</h3>
+          <p className="text-sm opacity-90">
+            Intelligent travel request handling with multi‑level approval workflows
+          </p>
         </div>
+        <div className="glass-card p-6 backdrop-blur-lg bg-white/10 border border-white/20 rounded-xl text-center">
+          <div className="text-4xl mb-4">⚡</div>
+          <h3 className="text-xl font-semibold mb-2">Fast Approvals</h3>
+          <p className="text-sm opacity-90">
+            Streamlined approval process with real‑time notifications
+          </p>
+        </div>
+        <div className="glass-card p-6 backdrop-blur-lg bg-white/10 border border-white/20 rounded-xl text-center">
+          <div className="text-4xl mb-4">📊</div>
+          <h3 className="text-xl font-semibold mb-2">Insights</h3>
+          <p className="text-sm opacity-90">
+            Comprehensive reporting and analytics for better decision making
+          </p>
+        </div>
+      </section>
 
-        {/* CTA */}
-        <div className="mt-16">
-          <button
-            onClick={() => setLoginModalOpen(true)}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-lg"
-          >
-            Get Started
-          </button>
+      {/* Footer demo credentials */}
+      <footer className="text-center py-8">
+        <p className="text-sm opacity-80 mb-2">Demo logins</p>
+        <div className="flex justify-center gap-4 text-sm">
+          <span className="font-mono">admin@example.com / ChangeMe123!</span>
+          <span className="font-mono">tenant.admin@example.com / ChangeMe123!</span>
+          <span className="font-mono">it.support@example.com / ChangeMe123!</span>
         </div>
-      </main>
+      </footer>
 
       {/* Login Modal */}
       <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
