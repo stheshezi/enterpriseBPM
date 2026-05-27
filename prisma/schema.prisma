@@ -102,7 +102,8 @@ model Tenant {
 
   users          User[]
   roles          Role[]
-  travelRequests TravelRequest[]
+  requests Request[]
+  requestTypes   RequestType[]
   workflowTasks  WorkflowTask[]
   auditLogs      AuditLog[]
   notifications  Notification[]
@@ -141,7 +142,7 @@ model User {
   directReports  User[]          @relation("UserManager")
   authorityLevel AuthorityLevel? @relation(fields: [authorityLevelId], references: [id])
   roles          UserRole[]
-  travelRequests TravelRequest[]
+  requests Request[]
   assignedTasks  WorkflowTask[]
   ownedAuthorityTasks WorkflowTask[] @relation("TaskAuthorityOwner")
   delegatedTaskAuthority WorkflowTask[] @relation("TaskDelegatedFrom")
@@ -174,21 +175,16 @@ model UserRole {
   @@unique([userId, roleId])
 }
 
-model TravelRequest {
+model Request {
   id            String        @id @default(uuid()) @map("_id")
   requestNumber String        @unique
   requesterId   String
   tenantId      String
   departmentId  String?
+  requestTypeId String?
   requiredAuthorityLevelId String?
-  department    String
-  destination   String
-  travelType    String
-  startDate     DateTime
-  endDate       DateTime
-  purpose       String
-  estimatedCost Float
-  costCenter    String
+  // Additional fields specific to request type are stored in payload JSON
+  payload       Json
   status        RequestStatus @default(DRAFT)
   currentStep   String?
   version       Int           @default(0)
@@ -198,6 +194,7 @@ model TravelRequest {
   requester User           @relation(fields: [requesterId], references: [id])
   tenant    Tenant         @relation(fields: [tenantId], references: [id])
   departmentRef Department? @relation(fields: [departmentId], references: [id])
+  requestType   RequestType?  @relation(fields: [requestTypeId], references: [id])
   requiredAuthorityLevel AuthorityLevel? @relation(fields: [requiredAuthorityLevelId], references: [id])
   tasks     WorkflowTask[]
   auditLogs AuditLog[]
@@ -205,6 +202,22 @@ model TravelRequest {
   workflowAssignments WorkflowAssignment[]
   workflowEvents WorkflowEvent[]
   approvalSnapshots ApprovalSnapshot[]
+}
+
+model RequestType {
+  id          String   @id @default(uuid()) @map("_id")
+  code        String   @unique
+  name        String
+  formId      String?
+  tenantId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  form     Form?     @relation(fields: [formId], references: [id])
+  requests Request[]
+
+  @@unique([tenantId, code])
 }
 
 model WorkflowTask {
@@ -222,7 +235,7 @@ model WorkflowTask {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  request   TravelRequest @relation(fields: [requestId], references: [id])
+  request   Request @relation(fields: [requestId], references: [id])
   assignee  User?         @relation(fields: [assigneeId], references: [id])
   authorityLevel AuthorityLevel? @relation(fields: [authorityLevelId], references: [id])
   authorityOwner User? @relation("TaskAuthorityOwner", fields: [authorityOwnerUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -253,7 +266,7 @@ model AuditLog {
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id])
   actorUser     User?          @relation(fields: [actorUserId], references: [id])
-  travelRequest TravelRequest? @relation(fields: [travelRequestId], references: [id])
+  request Request? @relation(fields: [travelRequestId], references: [id])
   workflowTask  WorkflowTask?  @relation(fields: [workflowTaskId], references: [id])
 }
 
@@ -279,8 +292,9 @@ model Form {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant Tenant      @relation(fields: [tenantId], references: [id])
-  fields FormField[]
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  fields       FormField[]
+  requestTypes RequestType[]
 }
 
 model FormField {
@@ -311,7 +325,7 @@ model Department {
   parentDepartment   Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   childDepartments   Department[] @relation("DepartmentHierarchy")
   users              User[]
-  travelRequests     TravelRequest[]
+  requests     Request[]
 
   @@unique([tenantId, name])
 }
@@ -328,7 +342,7 @@ model AuthorityLevel {
 
   tenant        Tenant @relation(fields: [tenantId], references: [id])
   users         User[]
-  requests      TravelRequest[]
+  requests      Request[]
   workflowTasks WorkflowTask[]
   delegations   Delegation[]
   transitionsFrom WorkflowTransition[] @relation("TransitionRequiredAuthority")
@@ -391,7 +405,7 @@ model ApprovalAction {
   actionTimestamp      DateTime         @default(now())
 
   tenant               Tenant        @relation(fields: [tenantId], references: [id])
-  request              TravelRequest @relation(fields: [requestId], references: [id])
+  request              Request @relation(fields: [requestId], references: [id])
   actionByUser         User          @relation("ApprovalActionActor", fields: [actionByUserId], references: [id])
   authorityOwnerUser   User?         @relation("ApprovalActionAuthorityOwner", fields: [authorityOwnerUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -409,7 +423,7 @@ model WorkflowAssignment {
   status           AssignmentStatus @default(ACTIVE)
 
   tenant           Tenant          @relation(fields: [tenantId], references: [id])
-  request          TravelRequest   @relation(fields: [requestId], references: [id])
+  request          Request   @relation(fields: [requestId], references: [id])
   workflowTask     WorkflowTask?   @relation(fields: [workflowTaskId], references: [id])
   assignedToUser   User            @relation(fields: [assignedToUserId], references: [id])
   authorityLevel   AuthorityLevel? @relation(fields: [authorityLevelId], references: [id])
@@ -496,7 +510,7 @@ model ApprovalSnapshot {
   createdAt       DateTime @default(now())
 
   tenant          Tenant @relation(fields: [tenantId], references: [id])
-  request         TravelRequest @relation(fields: [requestId], references: [id])
+  request         Request @relation(fields: [requestId], references: [id])
 
   @@index([tenantId, requestId, createdAt])
 }
@@ -513,8 +527,8 @@ model WorkflowEvent {
   payload        String?
   createdAt      DateTime          @default(now())
 
-  tenant         Tenant @relation(fields: [tenantId], references: [id])
-  request        TravelRequest? @relation(fields: [requestId], references: [id])
+  tenant         Tenant  @relation(fields: [tenantId], references: [id])
+  request        Request? @relation(fields: [requestId], references: [id])
 
   @@index([tenantId, requestId, createdAt])
 }

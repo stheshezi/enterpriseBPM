@@ -190,38 +190,44 @@ async function main() {
   console.log(`Seeded tenant ${tenant.name} and admin ${admin.email}`);
 
   // -------------------------------------------------------
-  // Create a demo travel request so the UI has something to show
+  // Create a demo request so the UI has something to show
   // -------------------------------------------------------
-  await prisma.travelRequest.upsert({
+  await prisma.request.upsert({
     where: { requestNumber: "TR-001" },
     update: {
       requesterId: admin.id,
       tenantId: tenant.id,
-      department: "Engineering",
-      destination: "New York",
-      travelType: "Business",
-      purpose: "Demo conference attendance",
-      estimatedCost: 1200,
-      costCenter: "CC100",
+      departmentId: engineering.id,
+      payload: {
+        destination: "New York",
+        travelType: "Business",
+        purpose: "Demo conference attendance",
+        estimatedCost: 1200,
+        costCenter: "CC100",
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      },
       status: "DRAFT",
     },
     create: {
       requestNumber: "TR-001",
       requesterId: admin.id,
       tenantId: tenant.id,
-      department: "Engineering",
-      destination: "New York",
-      travelType: "Business",
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // +3 days
-      purpose: "Demo conference attendance",
-      estimatedCost: 1200,
-      costCenter: "CC100",
+      departmentId: engineering.id,
+      payload: {
+        destination: "New York",
+        travelType: "Business",
+        purpose: "Demo conference attendance",
+        estimatedCost: 1200,
+        costCenter: "CC100",
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      },
       status: "DRAFT",
     },
   });
 
-  console.log('✅ Demo TravelRequest TR-001 created');
+  console.log('✅ Demo Request TR-001 created');
 
   console.log(`Login with email: ${admin.email} and password: ${process.env.SUPER_ADMIN_PASSWORD ?? "ChangeMe123!"}`);
 }

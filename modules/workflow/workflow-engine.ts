@@ -4,7 +4,7 @@ import { authorityResolver } from "@/modules/authority/authority-resolver";
 import { hierarchyTraversalService } from "@/modules/authority/hierarchy-traversal-service";
 import { approvalLimitResolver } from "@/modules/rules/approval-limit-resolver";
 import { transitionEngine } from "@/modules/workflow/transition-engine";
-import type { CreateTravelRequestInput } from "@/modules/requests/service";
+import type { CreateRequestInput, TravelRequestPayload } from "@/modules/requests/service";
 
 type DbClient = any;
 
@@ -14,11 +14,18 @@ export class WorkflowEngine {
     requesterId,
     tenantId,
   }: {
-    input: CreateTravelRequestInput;
+    input: CreateRequestInput;
     requesterId: string;
     tenantId: string;
   }) {
-    const requiredAuthority = await approvalLimitResolver.resolveRequiredLevel(tenantId, input.estimatedCost);
+    // Extract payload for cost resolution
+    const payload = input.payload as TravelRequestPayload;
+    const estimatedCost = (payload as any).estimatedCost || 0;
+
+    const requiredAuthority = await approvalLimitResolver.resolveRequiredLevel(
+      tenantId,
+      estimatedCost
+    );
     const firstAuthority = await transitionEngine.nextAuthorityLevel({
       tenantId,
       requiredAuthorityLevel: requiredAuthority,
@@ -34,24 +41,40 @@ export class WorkflowEngine {
       authorityLevelId: firstAuthority.id,
     });
 
-    const hierarchySnapshot = await hierarchyTraversalService.snapshotChain(requesterId, tenantId);
-    const authorityChain = await approvalLimitResolver.getChainToRank(tenantId, requiredAuthority.rankOrder);
-    const department = await prisma.department.findFirst({
-      where: { tenantId, name: input.department },
-    });
+    const hierarchySnapshot = await hierarchyTraversalService.snapshotChain(
+      requesterId,
+      tenantId
+    );
+    const authorityChain = await approvalLimitResolver.getChainToRank(
+      tenantId,
+      requiredAuthority.rankOrder
+    );
 
-    const requestNumber = `TR-${Date.now()}`;
-    const currentState = transitionEngine.pendingStatusForAuthority(firstAuthority.code);
+    const departmentName = (payload as any).department || input.departmentId;
+    const department = departmentName
+      ? await prisma.department.findFirst({
+          where: {
+            tenantId,
+            name: typeof departmentName === "string" ? departmentName : "",
+          },
+        })
+      : null;
+
+    const requestNumber = `REQ-${Date.now()}`;
+    const currentState = transitionEngine.pendingStatusForAuthority(
+      firstAuthority.code
+    );
     const stepName = transitionEngine.stepNameForAuthority(firstAuthority.code);
 
     return prisma.$transaction(async (tx) => {
-      const request = await tx.travelRequest.create({
+      const request = await tx.request.create({
         data: {
-          ...input,
           requestNumber,
           requesterId,
           tenantId,
-          departmentId: department?.id,
+          requestTypeId: input.requestTypeId,
+          departmentId: department?.id || input.departmentId,
+          payload: input.payload,
           requiredAuthorityLevelId: requiredAuthority.id,
           status: currentState,
           currentStep: stepName,
@@ -66,7 +89,9 @@ export class WorkflowEngine {
           assigneeId: resolution.assignedToUserId,
           authorityLevelId: resolution.authorityLevelId,
           authorityOwnerUserId: resolution.authorityOwnerUserId,
-          delegatedFromUserId: resolution.delegated ? resolution.authorityOwnerUserId : undefined,
+          delegatedFromUserId: resolution.delegated
+            ? resolution.authorityOwnerUserId
+            : undefined,
           stepName,
           status: "PENDING",
         },
@@ -94,12 +119,11 @@ export class WorkflowEngine {
               code: level.code,
               rankOrder: level.rankOrder,
               approvalLimit: level.approvalLimit,
-            })),
+            }))
           ),
           policyContext: JSON.stringify({
-            amount: input.estimatedCost,
-            department: input.department,
-            travelType: input.travelType,
+            amount: estimatedCost,
+            payload: input.payload,
           }),
         },
       });
@@ -115,7 +139,7 @@ export class WorkflowEngine {
         requiredAuthorityCode: requiredAuthority.code,
       });
 
-      return tx.travelRequest.findUniqueOrThrow({
+      return tx.request.findUniqueOrThrow({
         where: { id: request.id },
         include: { tasks: true },
       });
@@ -142,12 +166,13 @@ export class WorkflowEngine {
       });
 
       if (!task) throw new Error("Task not found.");
-      if (task.status !== "PENDING") throw new Error("Task has already been completed.");
+      if (task.status !== "PENDING")
+        throw new Error("Task has already been completed.");
       if (task.assigneeId && task.assigneeId !== actorUserId) {
         throw new Error("Only the assigned approver can complete this task.");
       }
 
-      const requestUpdate = await tx.travelRequest.updateMany({
+      const requestUpdate = await tx.request.updateMany({
         where: {
           id: task.requestId,
           tenantId,
@@ -160,8 +185,12 @@ export class WorkflowEngine {
       });
 
       if (requestUpdate.count !== 1) {
-        throw new Error("Workflow changed while this approval was being processed. Please reload and try again.");
+        throw new Error(
+          "Workflow changed while this approval was being processed. Please reload and try again."
+        );
       }
+
+      const previousState = task.request.status;
 
       await tx.workflowTask.update({
         where: { id: task.id },
@@ -183,8 +212,6 @@ export class WorkflowEngine {
         },
       });
 
-      const previousState = task.request.status;
-
       if (decision === "REJECTED") {
         const request = await this.finalizeRequest(tx as DbClient, {
           task,
@@ -200,7 +227,12 @@ export class WorkflowEngine {
       }
 
       const requiredAuthority = await tx.authorityLevel.findUnique({
-        where: { id: task.request.requiredAuthorityLevelId ?? task.authorityLevelId ?? "" },
+        where: {
+          id:
+            task.request.requiredAuthorityLevelId ??
+            task.authorityLevelId ??
+            "",
+        },
       });
 
       if (!requiredAuthority) {
@@ -233,8 +265,12 @@ export class WorkflowEngine {
         authorityLevelId: nextAuthority.id,
       });
 
-      const nextState = transitionEngine.pendingStatusForAuthority(nextAuthority.code);
-      const nextStepName = transitionEngine.stepNameForAuthority(nextAuthority.code);
+      const nextState = transitionEngine.pendingStatusForAuthority(
+        nextAuthority.code
+      );
+      const nextStepName = transitionEngine.stepNameForAuthority(
+        nextAuthority.code
+      );
 
       await tx.approvalAction.create({
         data: {
@@ -251,7 +287,7 @@ export class WorkflowEngine {
         },
       });
 
-      const request = await tx.travelRequest.update({
+      const request = await tx.request.update({
         where: { id: task.requestId },
         data: {
           status: nextState,
@@ -266,7 +302,9 @@ export class WorkflowEngine {
           assigneeId: resolution.assignedToUserId,
           authorityLevelId: resolution.authorityLevelId,
           authorityOwnerUserId: resolution.authorityOwnerUserId,
-          delegatedFromUserId: resolution.delegated ? resolution.authorityOwnerUserId : undefined,
+          delegatedFromUserId: resolution.delegated
+            ? resolution.authorityOwnerUserId
+            : undefined,
           stepName: nextStepName,
           status: "PENDING",
         },
@@ -317,7 +355,7 @@ export class WorkflowEngine {
       comment?: string;
       previousState: string;
       nextState: "APPROVED" | "REJECTED";
-    },
+    }
   ) {
     await tx.approvalAction.create({
       data: {
@@ -334,7 +372,7 @@ export class WorkflowEngine {
       },
     });
 
-    const request = await tx.travelRequest.update({
+    const request = await tx.request.update({
       where: { id: task.requestId },
       data: {
         status: nextState,
@@ -348,14 +386,19 @@ export class WorkflowEngine {
         actorUserId,
         travelRequestId: task.requestId,
         workflowTaskId: task.id,
-        entityType: "TravelRequest",
+        entityType: "Request",
         entityId: task.requestId,
-        action: decision === "APPROVED" ? "REQUEST_APPROVED" : "REQUEST_REJECTED",
+        action:
+          decision === "APPROVED" ? "REQUEST_APPROVED" : "REQUEST_REJECTED",
         previousState,
         nextState,
         authorityOwnerUserId: task.authorityOwnerUserId,
         delegated: Boolean(task.delegatedFromUserId),
-        newValue: JSON.stringify({ comment, step: task.stepName, decision }),
+        newValue: JSON.stringify({
+          comment,
+          step: task.stepName,
+          decision,
+        }),
       },
     });
 
@@ -365,7 +408,10 @@ export class WorkflowEngine {
         requestId: task.requestId,
         workflowTaskId: task.id,
         actorUserId,
-        type: decision === "APPROVED" ? "WORKFLOW_COMPLETED" : "APPROVAL_REJECTED",
+        type:
+          decision === "APPROVED"
+            ? "WORKFLOW_COMPLETED"
+            : "APPROVAL_REJECTED",
         previousState,
         nextState,
         payload: JSON.stringify({ comment, step: task.stepName }),
@@ -386,7 +432,7 @@ export class WorkflowEngine {
       requestNumber: string;
       resolution: any;
       requiredAuthorityCode: string;
-    },
+    }
   ) {
     await tx.auditLog.create({
       data: {
@@ -394,7 +440,7 @@ export class WorkflowEngine {
         actorUserId: input.actorUserId,
         travelRequestId: input.requestId,
         workflowTaskId: input.taskId,
-        entityType: "TravelRequest",
+        entityType: "Request",
         entityId: input.requestId,
         action: "REQUEST_SUBMITTED",
         previousState: "DRAFT",
@@ -434,7 +480,7 @@ export class WorkflowEngine {
       nextState: string;
       comment?: string;
       resolution: any;
-    },
+    }
   ) {
     await tx.auditLog.create({
       data: {
@@ -442,7 +488,7 @@ export class WorkflowEngine {
         actorUserId: input.actorUserId,
         travelRequestId: input.requestId,
         workflowTaskId: input.taskId,
-        entityType: "TravelRequest",
+        entityType: "Request",
         entityId: input.requestId,
         action: "REQUEST_APPROVED",
         previousState: input.previousState,
@@ -475,6 +521,45 @@ export class WorkflowEngine {
           payload: JSON.stringify(input.resolution),
         },
       ],
+    });
+  }
+
+  async getRequest(requestId: string) {
+    return prisma.request.findUnique({
+      where: { id: requestId },
+      include: {
+        requester: true,
+        requestType: true,
+        tasks: true,
+        approvalActions: true,
+        workflowEvents: true,
+        auditLogs: true,
+      },
+    });
+  }
+
+  async getUserRequests(userId: string, tenantId: string) {
+    return prisma.request.findMany({
+      where: {
+        tenantId,
+        requesterId: userId,
+      },
+      include: {
+        requestType: true,
+        tasks: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async updateRequestStatus(
+    requestId: string,
+    status: string,
+    tenantId: string
+  ) {
+    return prisma.request.update({
+      where: { id: requestId },
+      data: { status: status as any },
     });
   }
 }
