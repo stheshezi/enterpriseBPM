@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const tenant = await getTenantContextFromHeaders();
 
   try {
-    const requests = await prisma.travelRequest.findMany({
+    const requests = await prisma.request.findMany({
       where: {
         tenantId: tenant.tenantId,
         OR: [

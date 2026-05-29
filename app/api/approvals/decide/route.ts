@@ -44,6 +44,7 @@ export async function POST(request: Request) {
       tenantId: tenant.tenantId,
       decision: parsed.data.decision,
       comment: parsed.data.comment,
+      bypassAssignment: session.user.roles.includes("SUPER_ADMIN"),
     });
 
     return NextResponse.json(

@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     }
 
     // Fetch request statistics
-    const requests = await prisma.travelRequest.findMany({
+    const requests = await prisma.request.findMany({
       where: {
         tenantId: tenant.tenantId,
         createdAt: { gte: startDate },

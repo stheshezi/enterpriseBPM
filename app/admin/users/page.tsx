@@ -8,7 +8,7 @@ import { listTenantUsers } from "@/modules/admin/users";
 
 export default async function AdminUsersPage() {
   const user = await requirePermission(PERMISSIONS.USERS_VIEW);
-  const users = await listTenantUsers(user.tenantId);
+  const users = await listTenantUsers(user.roles.includes("SUPER_ADMIN") ? undefined : user.tenantId);
 
   return (
     <PageContainer>

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getTenantContextFromHeaders } from "@/lib/tenant";
 import { PERMISSIONS } from "@/config/permissions";
-import { createSubmittedTravelRequest, travelRequestSchema } from "@/modules/requests/service";
+import { createSubmittedRequest, travelRequestPayloadSchema } from "@/modules/requests/service";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -17,7 +17,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const parsed = travelRequestSchema.safeParse(body);
+  const parsed = travelRequestPayloadSchema.safeParse({
+    requestType: "travel",
+    ...body,
+  });
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -31,8 +34,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Tenant mismatch." }, { status: 403 });
   }
 
-  const travelRequest = await createSubmittedTravelRequest({
-    input: parsed.data,
+  const travelRequest = await createSubmittedRequest({
+    input: {
+      payload: parsed.data,
+    },
     requesterId: session.user.id,
     tenantId: tenant.tenantId,
   });

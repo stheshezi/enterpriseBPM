@@ -155,13 +155,30 @@ model User {
   workflowAssignments WorkflowAssignment[]
 }
 
+model Permission {
+  id        String   @id @default(uuid()) @map("_id")
+  name      String   @unique
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model RolePermission {
+  id         String   @id @default(uuid()) @map("_id")
+  roleId     String
+  permissionId String
+  role       Role     @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+  @@unique([roleId, permissionId])
+}
+
 model Role {
   id       String @id @default(uuid()) @map("_id")
   name     String @unique
   tenantId String
 
-  tenant Tenant     @relation(fields: [tenantId], references: [id])
-  users  UserRole[]
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  users          UserRole[]
+  rolePermissions RolePermission[]
 }
 
 model UserRole {
@@ -183,7 +200,7 @@ model Request {
   departmentId  String?
   requestTypeId String?
   requiredAuthorityLevelId String?
-  // Additional fields specific to request type are stored in payload JSON
+  // Generic JSON payload for request-specific data
   payload       Json
   status        RequestStatus @default(DRAFT)
   currentStep   String?
@@ -202,6 +219,21 @@ model Request {
   workflowAssignments WorkflowAssignment[]
   workflowEvents WorkflowEvent[]
   approvalSnapshots ApprovalSnapshot[]
+
+}
+
+model TravelRequestDetails {
+  id String @id @default(uuid()) @map("_id")
+  requestId String @unique
+  destination String
+  travelType String
+  purpose String
+  estimatedCost Float
+  costCenter String
+  startDate DateTime
+  endDate DateTime
+
+  request Request @relation(fields: [requestId], references: [id])
 }
 
 model RequestType {

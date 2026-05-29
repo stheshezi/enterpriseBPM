@@ -5,6 +5,10 @@ export type BpmStatus =
   | "SUBMITTED"
   | "PENDING_MANAGER_APPROVAL"
   | "PENDING_FINANCE_APPROVAL"
+  | "PENDING_LM"
+  | "PENDING_BUMA"
+  | "PENDING_C5"
+  | "PENDING_CEO"
   | "MANAGER_APPROVAL"
   | "FINANCE_APPROVAL"
   | "APPROVED"
@@ -19,6 +23,10 @@ const statusMap: Record<BpmStatus, { label: string; variant: BadgeVariant }> = {
   SUBMITTED: { label: "Submitted", variant: "info" },
   PENDING_MANAGER_APPROVAL: { label: "Manager approval", variant: "warning" },
   PENDING_FINANCE_APPROVAL: { label: "Finance approval", variant: "warning" },
+  PENDING_LM: { label: "Line manager", variant: "warning" },
+  PENDING_BUMA: { label: "Business unit manager", variant: "warning" },
+  PENDING_C5: { label: "C5 executive", variant: "warning" },
+  PENDING_CEO: { label: "CEO approval", variant: "warning" },
   MANAGER_APPROVAL: { label: "Manager approval", variant: "warning" },
   FINANCE_APPROVAL: { label: "Finance approval", variant: "warning" },
   APPROVED: { label: "Approved", variant: "success" },

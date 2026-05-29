@@ -1,21 +1,37 @@
-import Link from "next/link";
-import { PageContainer, PageHeader } from "@/components/layout";
-import { RequestTable } from "@/components/requests";
-import { Button } from "@/components/ui";
+import React from "react";
+import { requirePermission } from "../../lib/requirePermission";
+import StateWrapper from "../../components/StateWrapper";
 import { PERMISSIONS } from "@/config/permissions";
-import { requirePermission } from "@/lib/access-control";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 export default async function RequestsPage() {
-  await requirePermission(PERMISSIONS.REQUESTS_CREATE);
+  // Permission check
+  await requirePermission([PERMISSIONS.REQUESTS_VIEW_OWN, PERMISSIONS.REQUESTS_VIEW_TENANT]);
+
+  // Placeholder: fetch list of requests (could be replaced with actual data fetching)
+  const requests = await prisma.request.findMany({
+    take: 10,
+    orderBy: { createdAt: "desc" },
+  });
+
+  const loading = false;
+  const error = null;
+  const empty = requests.length === 0;
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Requests"
-        description="Create, find, and track workflow requests across the tenant."
-        primaryAction={<Link href="/travel-requests/new"><Button>New request</Button></Link>}
-      />
-      <RequestTable rows={[]} />
-    </PageContainer>
+    <StateWrapper loading={loading} error={error} empty={empty}>
+      <h1 className="text-3xl font-bold mb-4">Requests</h1>
+      <ul className="space-y-2">
+        {requests.map((req) => (
+          <li key={req.id} className="p-2 border rounded hover:bg-gray-50">
+            <a href={`/requests/${req.id}`} className="font-medium text-blue-600">
+              {req.requestNumber} – {req.status}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </StateWrapper>
   );
 }

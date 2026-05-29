@@ -19,7 +19,7 @@ export async function GET(
   const tenant = await getTenantContextFromHeaders();
 
   try {
-    const travelRequest = await prisma.travelRequest.findUnique({
+    const travelRequest = await prisma.request.findUnique({
       where: { id },
       include: {
         requester: true,

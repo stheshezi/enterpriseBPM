@@ -3,9 +3,14 @@ import { KpiCard, SlaOverviewCard, StatusSummaryCard } from "@/components/dashbo
 import { PageContainer, PageHeader } from "@/components/layout";
 import { PERMISSIONS } from "@/config/permissions";
 import { requirePermission } from "@/lib/access-control";
+import { getSuperAdminDashboardData } from "@/lib/dashboard-data";
 
 export default async function ReportsPage() {
-  await requirePermission(PERMISSIONS.REPORTS_VIEW);
+  const user = await requirePermission(PERMISSIONS.REPORTS_VIEW);
+  const data = await getSuperAdminDashboardData(user);
+  const totalRequests = data.kpis.find((kpi) => kpi.id === "requests")?.value ?? 0;
+  const pendingApprovals = data.kpis.find((kpi) => kpi.id === "pending")?.value ?? 0;
+  const completionRate = data.kpis.find((kpi) => kpi.id === "completion")?.value ?? "0%";
 
   return (
     <PageContainer>
@@ -16,13 +21,17 @@ export default async function ReportsPage() {
         <Link className="feature-card" href="/reports/audit"><h2>Audit Reports</h2><p>Security, workflow, user, and configuration events.</p></Link>
       </section>
       <section className="dashboard-grid">
-        <KpiCard title="Total Requests" value={0} description="All visible requests" />
-        <KpiCard title="Pending Approvals" value={0} description="Awaiting decision" />
-        <KpiCard title="Completion Rate" value="0%" description="Completed requests" />
+        <KpiCard title="Total Requests" value={totalRequests} description="All visible requests" />
+        <KpiCard title="Pending Approvals" value={pendingApprovals} description="Awaiting decision" />
+        <KpiCard title="Completion Rate" value={completionRate} description="Completed requests" />
       </section>
       <section className="stack">
-        <StatusSummaryCard items={[]} />
-        <SlaOverviewCard onTimeCount={0} atRiskCount={0} overdueCount={0} />
+        <StatusSummaryCard items={data.statusSummary.map((item) => ({ status: item.label, count: item.count }))} />
+        <SlaOverviewCard
+          onTimeCount={Number(data.totals.approved)}
+          atRiskCount={Number(pendingApprovals)}
+          overdueCount={data.totals.overdueTasks}
+        />
       </section>
     </PageContainer>
   );

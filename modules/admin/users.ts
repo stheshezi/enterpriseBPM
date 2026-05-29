@@ -11,9 +11,9 @@ export type TenantUserListItem = {
   lastLogin?: string;
 };
 
-export async function listTenantUsers(tenantId: string): Promise<TenantUserListItem[]> {
+export async function listTenantUsers(tenantId?: string): Promise<TenantUserListItem[]> {
   const users = await prisma.user.findMany({
-    where: { tenantId },
+    where: tenantId ? { tenantId } : {},
     orderBy: { email: "asc" },
     include: { roles: { include: { role: true } } },
   });

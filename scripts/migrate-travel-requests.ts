@@ -69,7 +69,7 @@ async function main() {
     console.log("=====================================\n");
 
     // Get MongoDB connection for raw operations
-    const db = prisma.$client as any;
+    const db = (prisma as any).$client;
 
     // Get all travel requests from the database
     console.log("📊 Fetching travel requests...");

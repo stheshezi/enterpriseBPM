@@ -22,7 +22,7 @@ async function rollback(backupCollectionName: string) {
     console.log("🔄 Starting rollback...");
     console.log(`Backup collection: ${backupCollectionName}\n`);
 
-    const db = prisma.$client as any;
+    const db = (prisma as any).$client;
 
     // Get backup data
     const backupCollection = db.collection(backupCollectionName);

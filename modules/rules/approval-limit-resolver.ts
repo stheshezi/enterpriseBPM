@@ -9,22 +9,22 @@ const DEFAULT_AUTHORITY_LIMITS = [
 
 export class ApprovalLimitResolver {
   async ensureDefaults(tenantId: string) {
+    const existingLevels = await prisma.authorityLevel.findMany();
+
     for (const level of DEFAULT_AUTHORITY_LIMITS) {
-      await prisma.authorityLevel.upsert({
-        where: { tenantId_code: { tenantId, code: level.code } },
-        update: {
-          name: level.name,
-          rankOrder: level.rankOrder,
-          approvalLimit: level.approvalLimit,
-        },
-        create: {
-          tenantId,
-          code: level.code,
-          name: level.name,
-          rankOrder: level.rankOrder,
-          approvalLimit: level.approvalLimit,
-        },
-      });
+      const existing = existingLevels.find((candidate) => candidate.tenantId === tenantId && candidate.code === level.code);
+
+      if (!existing) {
+        await prisma.authorityLevel.create({
+          data: {
+            tenantId,
+            code: level.code,
+            name: level.name,
+            rankOrder: level.rankOrder,
+            approvalLimit: level.approvalLimit,
+          },
+        });
+      }
     }
   }
 
@@ -32,11 +32,11 @@ export class ApprovalLimitResolver {
     await this.ensureDefaults(tenantId);
 
     const levels = await prisma.authorityLevel.findMany({
-      where: { tenantId },
       orderBy: { rankOrder: "asc" },
     });
+    const tenantLevels = levels.filter((level) => level.tenantId === tenantId);
 
-    const level = levels.find((candidate) => candidate.approvalLimit === null || amount <= candidate.approvalLimit);
+    const level = tenantLevels.find((candidate) => candidate.approvalLimit === null || amount <= candidate.approvalLimit);
 
     if (!level) {
       throw new Error(`No authority level can approve amount ${amount}.`);
@@ -48,13 +48,8 @@ export class ApprovalLimitResolver {
   async getChainToRank(tenantId: string, requiredRankOrder: number) {
     await this.ensureDefaults(tenantId);
 
-    return prisma.authorityLevel.findMany({
-      where: {
-        tenantId,
-        rankOrder: { lte: requiredRankOrder },
-      },
-      orderBy: { rankOrder: "asc" },
-    });
+    const levels = await prisma.authorityLevel.findMany({ orderBy: { rankOrder: "asc" } });
+    return levels.filter((level) => level.tenantId === tenantId && level.rankOrder <= requiredRankOrder);
   }
 }
 

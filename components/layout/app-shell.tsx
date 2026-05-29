@@ -7,7 +7,7 @@ import { Topbar } from "@/components/layout/topbar";
 import type { AppPermission } from "@/types/auth";
 
 const defaultNavItems: SidebarNavItem[] = [
-  { href: "/", label: "Dashboard", marker: "D" },
+  { href: "/dashboard", label: "Dashboard", marker: "D" },
   { href: "/requests", label: "Requests", marker: "R", permission: PERMISSIONS.REQUESTS_CREATE },
   { href: "/tasks", label: "My Tasks", marker: "T", permission: PERMISSIONS.TASKS_VIEW_ASSIGNED },
   { href: "/approvals", label: "Approvals", marker: "A", permission: PERMISSIONS.REQUESTS_APPROVE_MANAGER },

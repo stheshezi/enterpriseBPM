@@ -26,42 +26,33 @@ export class HierarchyTraversalService {
       visited.add(current.id);
 
       const manager = await prisma.user.findFirst({
-        where: {
-          id: current.managerId,
-          tenantId,
-          active: true,
-        },
-        select: {
-          id: true,
-          managerId: true,
-          authorityLevelId: true,
-        },
+        where: { id: current.managerId, active: true },
+        select: { id: true, tenantId: true, managerId: true, authorityLevelId: true },
       });
 
-      if (!manager) break;
+      if (!manager || manager.tenantId !== tenantId) break;
       if (manager.authorityLevelId === authorityLevelId) return manager;
 
       current = manager;
     }
 
-    return prisma.user.findFirst({
-      where: {
-        tenantId,
-        active: true,
-        authorityLevelId,
-      },
+    const activeUsers = await prisma.user.findMany({
+      where: { active: true },
       orderBy: { createdAt: "asc" },
     });
+
+    return activeUsers.find((user) => user.tenantId === tenantId && user.authorityLevelId === authorityLevelId) ?? null;
   }
 
   async snapshotChain(requesterId: string, tenantId: string) {
     const chain = [];
     const visited = new Set<string>();
     let current = await prisma.user.findFirst({
-      where: { id: requesterId, tenantId },
+      where: { id: requesterId },
       select: {
         id: true,
         email: true,
+        tenantId: true,
         managerId: true,
         authorityLevel: true,
       },
@@ -78,15 +69,17 @@ export class HierarchyTraversalService {
       });
 
       if (!current.managerId) break;
-      current = await prisma.user.findFirst({
-        where: { id: current.managerId, tenantId },
+      const next = await prisma.user.findFirst({
+        where: { id: current.managerId },
         select: {
           id: true,
           email: true,
           managerId: true,
+          tenantId: true,
           authorityLevel: true,
         },
       });
+      current = next?.tenantId === tenantId ? next : null;
     }
 
     return chain;

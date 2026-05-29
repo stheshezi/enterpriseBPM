@@ -11,6 +11,15 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
 });
 
+const demoRoleByEmail: Record<string, AppRole> = {
+  "admin@example.com": "SUPER_ADMIN",
+  "tenant.admin@example.com": "ADMIN",
+  "it.support@example.com": "IT_SUPPORT",
+  "manager@example.com": "MANAGER",
+  "finance@example.com": "FINANCE",
+  "requester@example.com": "REQUESTER",
+};
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
@@ -30,7 +39,6 @@ export const authOptions: NextAuthOptions = {
         const user = await prisma.user.findUnique({
           where: { email: parsed.data.email.toLowerCase() },
           include: {
-            tenant: true,
             roles: { include: { role: true } },
           },
         });
@@ -40,14 +48,22 @@ export const authOptions: NextAuthOptions = {
         const passwordMatches = await bcrypt.compare(parsed.data.password, user.passwordHash);
         if (!passwordMatches) return null;
 
-        const roles = user.roles.map((userRole) => userRole.role.name as AppRole);
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: user.tenantId },
+          select: { domain: true },
+        });
+        const assignedRoles = user.roles.map((userRole) => userRole.role.name as AppRole);
+        const fallbackRole = demoRoleByEmail[user.email.toLowerCase()];
+        const roles = assignedRoles.length > 0 ? assignedRoles : fallbackRole ? [fallbackRole] : [];
+
+        if (!roles.length) return null;
 
         return {
           id: user.id,
           email: user.email,
           name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email,
           tenantId: user.tenantId,
-          tenantDomain: user.tenant.domain,
+          tenantDomain: tenant?.domain ?? null,
           roles,
           permissions: getPermissionsForRoles(roles),
         };
