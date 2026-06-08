@@ -5,12 +5,14 @@ import { Button, Card, Input, Select, Textarea } from "@/components/ui";
 
 export interface RequestFormValues {
   department: string;
-  destination: string;
-  travelType: string;
-  startDate: string;
-  endDate: string;
+  requestType: string;
+  // Optional fields that may apply to specific request types
+  destination?: string;
+  travelType?: string;
+  startDate?: string;
+  endDate?: string;
   purpose: string;
-  estimatedCost: string;
+  estimatedCost?: string;
   costCenter: string;
 }
 
@@ -29,6 +31,7 @@ function readValues(form: HTMLFormElement): RequestFormValues {
   const data = new FormData(form);
   return {
     department: String(data.get("department") ?? ""),
+    requestType: String(data.get("requestType") ?? ""),
     destination: String(data.get("destination") ?? ""),
     travelType: String(data.get("travelType") ?? ""),
     startDate: String(data.get("startDate") ?? ""),
@@ -51,15 +54,38 @@ export function RequestForm({ defaultValues, errors = {}, isSubmitting, isSaving
         <Input label="Department" name="department" required defaultValue={defaultValues?.department} error={errors.department} disabled={disabled} />
         <Input label="Cost Center" name="costCenter" required defaultValue={defaultValues?.costCenter} error={errors.costCenter} disabled={disabled} />
       </Card>
-      <Card title="Travel Details" className="span-2">
-        <Input label="Destination" name="destination" required defaultValue={defaultValues?.destination} error={errors.destination} disabled={disabled} />
-        <Select label="Travel Type" name="travelType" required defaultValue={defaultValues?.travelType} error={errors.travelType} disabled={disabled} options={[{ label: "Domestic", value: "Domestic" }, { label: "International", value: "International" }, { label: "Client visit", value: "Client visit" }, { label: "Conference", value: "Conference" }]} />
-        <Input label="Start Date" name="startDate" type="date" required defaultValue={defaultValues?.startDate} error={errors.startDate} disabled={disabled} />
-        <Input label="End Date" name="endDate" type="date" required defaultValue={defaultValues?.endDate} error={errors.endDate} disabled={disabled} />
+      <Card title="Request Details" className="span-2">
+        <Select
+          label="Request Type"
+          name="requestType"
+          required
+          defaultValue={defaultValues?.requestType}
+          error={errors.requestType}
+          disabled={disabled}
+          options={[
+            { label: "Travel", value: "Travel" },
+            { label: "Budget Reallocation", value: "BudgetReallocation" },
+            { label: "Procurement", value: "Procurement" },
+            { label: "Asset Request", value: "AssetRequest" },
+            { label: "HR Request", value: "HRRequest" },
+          ]}
+        />
+        {/* Destination is only relevant for Travel requests – keep optional */}
+        <Input label="Destination" name="destination" defaultValue={defaultValues?.destination} error={errors.destination} disabled={disabled} />
+        <Select
+          label="Travel Type"
+          name="travelType"
+          defaultValue={defaultValues?.travelType}
+          error={errors.travelType}
+          disabled={disabled}
+          options={[{ label: "Domestic", value: "Domestic" }, { label: "International", value: "International" }, { label: "Client visit", value: "Client visit" }, { label: "Conference", value: "Conference" }]}
+        />
+        <Input label="Start Date" name="startDate" type="date" defaultValue={defaultValues?.startDate} error={errors.startDate} disabled={disabled} />
+        <Input label="End Date" name="endDate" type="date" defaultValue={defaultValues?.endDate} error={errors.endDate} disabled={disabled} />
         <Textarea label="Purpose" name="purpose" required defaultValue={defaultValues?.purpose} error={errors.purpose} disabled={disabled} maxLength={1000} />
       </Card>
       <Card title="Financial Details" className="span-2">
-        <Input label="Estimated Cost" name="estimatedCost" type="number" required defaultValue={defaultValues?.estimatedCost} error={errors.estimatedCost} disabled={disabled} />
+        <Input label="Estimated Cost" name="estimatedCost" type="number" defaultValue={defaultValues?.estimatedCost} error={errors.estimatedCost} disabled={disabled} />
       </Card>
       {fileUpload ? <Card title="Supporting Documents" className="span-2">{fileUpload}</Card> : null}
       <div className="form-actions span-2">

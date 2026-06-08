@@ -2,7 +2,7 @@ import type { ApprovalDecision } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getMongoDb, nowStamp } from "@/lib/mongo-native";
-import { authorityResolver } from "@/modules/authority/authority-resolver";
+import { resolveResponsibility } from "@/services/governanceResolver";
 import { hierarchyTraversalService } from "@/modules/authority/hierarchy-traversal-service";
 import { approvalLimitResolver } from "@/modules/rules/approval-limit-resolver";
 import { transitionEngine } from "@/modules/workflow/transition-engine";
@@ -46,10 +46,9 @@ export class WorkflowEngine {
       throw new Error("Workflow has no approval authority levels configured.");
     }
 
-    const resolution = await authorityResolver.resolve({
+    const resolution = await resolveResponsibility({
       tenantId,
-      requesterId,
-      authorityLevelId: firstAuthority.id,
+      authorityLevelCode: firstAuthority.code,
     });
 
     const hierarchySnapshot = await hierarchyTraversalService.snapshotChain(
@@ -136,7 +135,12 @@ export class WorkflowEngine {
           approvalLimit: level.approvalLimit,
         })),
       ),
-      policyContext: JSON.stringify({ amount: estimatedCost, payload: input.payload }),
+      policyContext: JSON.stringify({
+        amount: estimatedCost,
+        requestType: (payload as any).requestType,
+        workflowCode: (payload as any).workflowCode ?? "CONFIGURABLE_REQUEST_WORKFLOW",
+        payload: input.payload,
+      }),
       createdAt: timestamp,
     });
     await this.recordAssignmentEvents(db, {
@@ -255,10 +259,9 @@ export class WorkflowEngine {
       return { task, request };
     }
 
-    const resolution = await authorityResolver.resolve({
+    const resolution = await resolveResponsibility({
       tenantId,
-      requesterId: task.request.requesterId,
-      authorityLevelId: nextAuthority.id,
+      authorityLevelCode: nextAuthority.code,
     });
 
     const nextState = transitionEngine.pendingStatusForAuthority(nextAuthority.code);

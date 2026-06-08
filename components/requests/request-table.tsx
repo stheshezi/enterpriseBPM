@@ -32,7 +32,7 @@ export function RequestTable({ rows, isLoading, error }: RequestTableProps) {
         { key: "requestNumber", header: "Request Number", sortable: true },
         { key: "requester", header: "Requester", sortable: true },
         { key: "department", header: "Department", sortable: true },
-        { key: "destination", header: "Destination", sortable: true },
+        { key: "destination", header: "Key Detail", sortable: true },
         { key: "status", header: "Status", render: (row) => <StatusBadge status={row.status} /> },
         { key: "currentStep", header: "Current Step" },
         { key: "estimatedCost", header: "Estimated Cost", sortable: true },

@@ -42,17 +42,25 @@ export function Sidebar({
           </div>
         ) : null}
       </div>
+
       <nav className="layout-sidebar__nav">
         {visibleItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+
           return (
-            <Link className={isActive ? "is-active" : ""} href={item.href} key={`${item.href}-${item.label}`} aria-current={isActive ? "page" : undefined}>
+            <Link
+              aria-current={isActive ? "page" : undefined}
+              className={isActive ? "is-active" : ""}
+              href={item.href}
+              key={`${item.href}-${item.label}`}
+            >
               <span className="nav-marker">{item.marker}</span>
               {!isCollapsed ? <span>{item.label}</span> : null}
             </Link>
           );
         })}
       </nav>
+
       <div className="layout-sidebar__footer">
         <Button variant="outline" size={isCollapsed ? "icon" : "md"} onClick={onLogout ?? (() => signOut({ callbackUrl: "/login" }))}>
           {isCollapsed ? "S" : "Sign out"}

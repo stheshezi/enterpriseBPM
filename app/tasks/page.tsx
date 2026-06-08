@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { PageContainer, PageHeader } from "@/components/layout";
-import { Card } from "@/components/ui";
 import { PERMISSIONS } from "@/config/permissions";
-import { requirePermission } from "@/lib/access-control";
+import { requireCurrentUser, userCanAny } from "@/lib/access-control";
+import { redirect } from "next/navigation";
 import { getSuperAdminDashboardData } from "@/lib/dashboard-data";
+import { PendingTasksTable } from "@/components/dashboard";
 
 export const dynamic = "force-dynamic";
 
 export default async function TasksPage() {
-  const user = await requirePermission(PERMISSIONS.TASKS_VIEW_ASSIGNED);
+  const user = await requireCurrentUser();
+  if (!userCanAny(user, [PERMISSIONS.TASKS_VIEW_ASSIGNED])) {
+    redirect("/unauthorized");
+  }
   const data = await getSuperAdminDashboardData(user);
 
   return (
@@ -23,18 +27,16 @@ export default async function TasksPage() {
           </Link>
         ))}
       </section>
-      <Card title="Open workflow tasks">
-        <div className="live-list">
-          {data.pendingTasks.map((task) => (
-            <Link className={task.overdue ? "is-risk" : ""} href={task.href} key={task.id}>
-              <strong>{task.title}</strong>
-              <span>{task.requestNumber} - {task.assignee}</span>
-              <small>{task.tenant} - Due {task.dueAt}</small>
-            </Link>
-          ))}
-          {!data.pendingTasks.length ? <div className="component-state">No pending tasks in the database.</div> : null}
+      <div className="card p-0 overflow-hidden">
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-semibold">Open workflow tasks</h2>
         </div>
-      </Card>
+        <PendingTasksTable
+          rows={data.pendingTasks}
+          actionLabel="Review Task"
+          emptyMessage="No pending tasks in the database."
+        />
+      </div>
     </PageContainer>
   );
 }

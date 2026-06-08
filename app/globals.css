@@ -969,6 +969,7 @@ button:hover:not(:disabled) {
 }
 
 .task-health a,
+.task-health .health-indicator,
 .live-list a,
 .activity-feed a {
   display: grid;
@@ -980,6 +981,14 @@ button:hover:not(:disabled) {
   text-decoration: none;
 }
 
+.task-health .health-indicator {
+  background: var(--background);
+}
+
+.health-indicator--healthy { border-left: 5px solid var(--success); }
+.health-indicator--warning { border-left: 5px solid #b54708; }
+.health-indicator--risk { border-left: 5px solid var(--danger); }
+
 .task-health strong {
   font-size: 1.55rem;
 }
@@ -987,6 +996,7 @@ button:hover:not(:disabled) {
 .live-list span,
 .live-list small,
 .activity-feed small,
+.health-indicator small,
 .task-health span {
   color: var(--muted);
 }

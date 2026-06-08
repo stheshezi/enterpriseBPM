@@ -7,18 +7,26 @@ import { requirePermission } from "@/lib/access-control";
 export default async function WorkflowsPage() {
   await requirePermission(PERMISSIONS.SYSTEM_ADMIN);
 
+  const workflowRoutes = [
+    { type: "Travel Request", workflow: "Travel Approval workflow", steps: ["Submitted", "Manager Approval", "Finance Approval", "Completed"] },
+    { type: "Leave Request", workflow: "Leave Approval workflow", steps: ["Submitted", "Manager Approval", "HR Record", "Completed"] },
+    { type: "Purchase Request", workflow: "Procurement workflow", steps: ["Submitted", "Manager Approval", "Procurement Review", "Finance Approval", "Completed"] },
+    { type: "Future Request Types", workflow: "Configurable workflow", steps: ["Submitted", "Configured approvals", "Completed"] },
+  ];
+
   return (
     <PageContainer>
-      <PageHeader title="Workflows" description="Phase One workflow definitions are read-only and system-managed." />
-      <Card title="Travel Request Workflow">
-        <WorkflowTimeline steps={[
-          { title: "Submitted", status: "completed" },
-          { title: "Manager Approval", status: "current" },
-          { title: "Finance Approval", status: "pending" },
-          { title: "Approved", status: "pending" },
-          { title: "Completed", status: "pending" },
-        ]} />
-      </Card>
+      <PageHeader title="Workflows" description="Request-type driven workflow routing foundation." />
+      <section className="stack">
+        {workflowRoutes.map((route) => (
+          <Card key={route.type} title={`${route.type}: ${route.workflow}`}>
+            <WorkflowTimeline steps={route.steps.map((step, index) => ({
+              title: step,
+              status: index === 0 ? "completed" : index === 1 ? "current" : "pending",
+            }))} />
+          </Card>
+        ))}
+      </section>
     </PageContainer>
   );
 }

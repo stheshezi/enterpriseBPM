@@ -6,8 +6,20 @@ import { PERMISSIONS } from "@/config/permissions";
 import {
   createSubmittedRequest,
   createRequestSchema,
+  genericRequestPayloadSchema,
+  leaveRequestPayloadSchema,
+  purchaseRequestPayloadSchema,
   travelRequestPayloadSchema,
 } from "@/modules/requests/service";
+
+const workflowByRequestType: Record<string, string> = {
+  travel: "TRAVEL_APPROVAL",
+  leave: "LEAVE_APPROVAL",
+  purchase: "PROCUREMENT",
+  asset: "ASSET_APPROVAL",
+  training: "TRAINING_APPROVAL",
+  access: "ACCESS_APPROVAL",
+};
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -35,8 +47,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Tenant mismatch." }, { status: 403 });
   }
 
-  // Validate payload based on request type
-  let payloadValidation = travelRequestPayloadSchema.safeParse(parsed.data.payload);
+  const requestType = String(parsed.data.payload.requestType ?? "").toLowerCase();
+  const payloadValidation = (() => {
+    if (requestType === "travel") return travelRequestPayloadSchema.safeParse(parsed.data.payload);
+    if (requestType === "leave") return leaveRequestPayloadSchema.safeParse(parsed.data.payload);
+    if (requestType === "purchase") return purchaseRequestPayloadSchema.safeParse(parsed.data.payload);
+    return genericRequestPayloadSchema.safeParse(parsed.data.payload);
+  })();
+
   if (!payloadValidation.success) {
     return NextResponse.json(
       { error: "Invalid request payload.", issues: payloadValidation.error.flatten().fieldErrors },
@@ -45,7 +63,13 @@ export async function POST(request: Request) {
   }
 
   const createdRequest = await createSubmittedRequest({
-    input: parsed.data,
+    input: {
+      ...parsed.data,
+      payload: {
+        ...payloadValidation.data,
+        workflowCode: workflowByRequestType[requestType] ?? "CONFIGURABLE_REQUEST_WORKFLOW",
+      },
+    },
     requesterId: session.user.id,
     tenantId: tenant.tenantId,
   });

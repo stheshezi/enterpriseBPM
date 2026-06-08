@@ -38,8 +38,15 @@ export async function requireCurrentUser() {
   return user;
 }
 
-export async function requirePermission(permission: AppPermission) {
+export async function requireAnyPermission(...perms: AppPermission[]) {
   const user = await requireCurrentUser();
-  if (!userCan(user, permission)) redirect("/unauthorized");
+  if (!userCanAny(user, perms)) {
+    redirect("/unauthorized");
+  }
   return user;
+}
+
+export async function requirePermission(permissions: AppPermission | AppPermission[]) {
+  const requiredPermissions = Array.isArray(permissions) ? permissions : [permissions];
+  return requireAnyPermission(...requiredPermissions);
 }

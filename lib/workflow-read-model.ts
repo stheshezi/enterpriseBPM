@@ -29,13 +29,29 @@ function money(value: unknown) {
   return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(amount);
 }
 
+function payloadDate(value: unknown) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === "string" || typeof value === "number") return new Date(value);
+  if (typeof value === "object" && "$date" in value) return new Date(String((value as { $date: unknown }).$date));
+  return null;
+}
+
+export function payloadValue(value: unknown) {
+  if (value instanceof Date) return formatDateTime(value) ?? "";
+  if (typeof value === "object" && value !== null && "$date" in value) {
+    return formatDateTime(payloadDate(value)) ?? "";
+  }
+  return String(value ?? "");
+}
+
 function canSeeTenant(user: CurrentUser, tenantId: string) {
   return user.roles.includes("SUPER_ADMIN") || user.tenantId === tenantId;
 }
 
-export async function getRequestDetail(requestId: string, user: CurrentUser) {
+async function getRequestDetailInternal(whereClause: { id: string } | { requestNumber: string }, user: CurrentUser) {
   const request = await prisma.request.findUnique({
-    where: { id: requestId },
+    where: whereClause,
     select: {
       id: true,
       requestNumber: true,
@@ -62,13 +78,11 @@ export async function getRequestDetail(requestId: string, user: CurrentUser) {
     ...request.auditLogs.flatMap((log) => (log.actorUserId ? [log.actorUserId] : [])),
   ];
   const [users, tenant] = await Promise.all([
-    prisma.user.findMany({
-      where: { id: { in: [...new Set(userIds)] } },
-      select: { id: true, firstName: true, lastName: true, email: true },
-    }),
+    prisma.user.findMany({ select: { id: true, firstName: true, lastName: true, email: true } }),
     prisma.tenant.findUnique({ where: { id: request.tenantId }, select: { name: true, domain: true } }),
   ]);
-  const userById = new Map(users.map((item) => [item.id, item]));
+  const neededUserIds = new Set(userIds);
+  const userById = new Map(users.filter((item) => neededUserIds.has(item.id)).map((item) => [item.id, item]));
   const payload = request.payload as Record<string, unknown>;
   const currentTask = request.tasks.find((task) => task.status === "PENDING") ?? request.tasks.at(-1);
 
@@ -78,8 +92,8 @@ export async function getRequestDetail(requestId: string, user: CurrentUser) {
     tenantName: tenant?.name ?? "Unknown tenant",
     requester: personName(userById.get(request.requesterId)),
     purpose: String(payload.purpose ?? "Untitled request"),
-    destination: String(payload.destination ?? "Not captured"),
-    dateRange: [formatDateTime(payload.startDate ? new Date(String(payload.startDate)) : null), formatDateTime(payload.endDate ? new Date(String(payload.endDate)) : null)]
+    destination: String(payload.destination ?? payload.requestTypeName ?? payload.requestType ?? "General request"),
+    dateRange: [formatDateTime(payloadDate(payload.startDate)), formatDateTime(payloadDate(payload.endDate))]
       .filter(Boolean)
       .join(" to ") || "Dates not captured",
     estimatedCost: money(payload.estimatedCost),
@@ -141,6 +155,14 @@ export async function getRequestDetail(requestId: string, user: CurrentUser) {
       stepName: label(action.previousState ?? request.currentStep ?? "Approval"),
     })),
   };
+}
+
+export async function getRequestDetail(requestId: string, user: CurrentUser) {
+  return getRequestDetailInternal({ id: requestId }, user);
+}
+
+export async function getRequestDetailByNumber(requestNumber: string, user: CurrentUser) {
+  return getRequestDetailInternal({ requestNumber }, user);
 }
 
 export async function getTaskDetail(taskId: string, user: CurrentUser) {

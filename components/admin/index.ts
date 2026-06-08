@@ -1,3 +1,4 @@
+export * from "./admin-requests-table";
 export * from "./permission-matrix";
 export * from "./role-badge";
 export * from "./tenant-settings-form";

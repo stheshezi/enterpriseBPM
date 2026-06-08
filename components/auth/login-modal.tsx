@@ -3,21 +3,6 @@
 import { FormEvent, useState } from "react";
 import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { AppRole } from "@/types/auth";
-
-const roleRoutes: Array<{ role: AppRole; route: string }> = [
-  { role: "SUPER_ADMIN", route: "/admin" },
-  { role: "ADMIN", route: "/admin/users" },
-  { role: "IT_SUPPORT", route: "/admin/users" },
-  { role: "MANAGER", route: "/approvals" },
-  { role: "FINANCE", route: "/approvals" },
-  { role: "REQUESTER", route: "/requests" },
-];
-
-function destinationForRoles(roles: AppRole[] | undefined) {
-  const match = roleRoutes.find((candidate) => roles?.includes(candidate.role));
-  return match?.route ?? "/requests";
-}
 
 export function LoginModal({
   isOpen,
@@ -52,9 +37,9 @@ export function LoginModal({
       return;
     }
 
-    const session = await getSession();
+    await getSession();
     onClose();
-    router.push(destinationForRoles(session?.user.roles));
+    router.push("/dashboard");
     router.refresh();
   }
 
@@ -72,9 +57,9 @@ export function LoginModal({
       setError("Login failed. Please check your connection.");
       return;
     }
-    const session = await getSession();
+    await getSession();
     onClose();
-    router.push(destinationForRoles(session?.user.roles));
+    router.push("/dashboard");
     router.refresh();
   }
 

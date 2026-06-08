@@ -1,13 +1,17 @@
-import type { Metadata } from "next";
-import { Providers } from "@/app/providers";
 import "./globals.css";
 
-export const metadata: Metadata = {
+import { Providers } from "@/app/providers";
+
+export const metadata = {
   title: "Enterprise BPM Platform",
-  description: "Tenant-aware travel request workflow",
+  description: "Tenant-aware workflow request platform",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>

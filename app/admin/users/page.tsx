@@ -17,10 +17,12 @@ export default async function AdminUsersPage() {
         description="Invite, manage, and configure user access and roles."
         primaryAction={<Link href="/admin/users/new"><Button>Invite User</Button></Link>}
       />
-      <UserTable
-        rows={users}
-        detailHrefBase="/admin/users"
-      />
+      <div className="card p-0 overflow-hidden">
+        <UserTable
+          rows={users}
+          detailHrefBase="/admin/users"
+        />
+      </div>
     </PageContainer>
   );
 }

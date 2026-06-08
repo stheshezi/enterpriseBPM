@@ -5,7 +5,7 @@ import { AuditTimeline, WorkflowTimeline } from "@/components/workflow";
 import { Button, Card } from "@/components/ui";
 import { PERMISSIONS } from "@/config/permissions";
 import { requirePermission } from "@/lib/access-control";
-import { getRequestDetail } from "@/lib/workflow-read-model";
+import { getRequestDetail, payloadValue } from "@/lib/workflow-read-model";
 
 export default async function RequestDetailPage({ params }: { params: { requestId: string } }) {
   const user = await requirePermission(PERMISSIONS.REQUESTS_VIEW_OWN);
@@ -46,7 +46,7 @@ export default async function RequestDetailPage({ params }: { params: { requestI
         <Card title="Request Data">
           <div className="profile-grid">
             {Object.entries(request.payload).map(([key, value]) => (
-              <span key={key}>{key}<strong>{String(value)}</strong></span>
+              <span key={key}>{key}<strong>{payloadValue(value)}</strong></span>
             ))}
           </div>
         </Card>

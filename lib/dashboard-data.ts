@@ -46,6 +46,7 @@ function personName(user: { firstName: string | null; lastName: string | null; e
 }
 
 export type SuperAdminDashboardData = Awaited<ReturnType<typeof getSuperAdminDashboardData>>;
+export type RoleDashboardData = Awaited<ReturnType<typeof getRoleDashboardData>>;
 
 export async function getSuperAdminDashboardData(user: CurrentUser) {
   const isSuperAdmin = user.roles.includes("SUPER_ADMIN");
@@ -296,5 +297,142 @@ export async function getSuperAdminDashboardData(user: CurrentUser) {
       rejected: rejectedRequestCount,
       overdueTasks: overdueTaskCount,
     },
+    systemHealth: [
+      {
+        label: "Tenant scope",
+        value: isSuperAdmin ? "Platform-wide" : "Tenant",
+        state: "healthy" as const,
+      },
+      {
+        label: "Workflow tasks",
+        value: overdueTaskCount ? `${overdueTaskCount} overdue` : "On track",
+        state: overdueTaskCount ? ("risk" as const) : ("healthy" as const),
+      },
+      {
+        label: "Approval backlog",
+        value: pendingRequestCount ? `${pendingRequestCount} pending` : "Clear",
+        state: pendingRequestCount > 10 ? ("risk" as const) : ("healthy" as const),
+      },
+      {
+        label: "Recent activity",
+        value: recentAuditLogs.length ? "Auditing active" : "No recent logs",
+        state: recentAuditLogs.length ? ("healthy" as const) : ("warning" as const),
+      },
+    ],
+  };
+}
+
+export async function getRoleDashboardData(user: CurrentUser) {
+  const isManager = user.roles.includes("MANAGER") || user.roles.includes("FINANCE") || user.roles.includes("ADMIN");
+  const teamMembers = isManager
+    ? await prisma.user.findMany({
+        where: { tenantId: user.tenantId, managerId: user.id },
+        select: { id: true, firstName: true, lastName: true, email: true },
+      })
+    : [];
+  const teamMemberIds = teamMembers.map((member) => member.id);
+  const requestWhere = isManager && teamMemberIds.length
+    ? { tenantId: user.tenantId, requesterId: { in: teamMemberIds } }
+    : { tenantId: user.tenantId, requesterId: user.id };
+  const taskWhere = { tenantId: user.tenantId, assigneeId: user.id, status: TaskStatus.PENDING };
+
+  const [
+    myRequestCount,
+    teamRequestCount,
+    pendingTaskCount,
+    pendingApprovalCount,
+    statusCounts,
+    recentRequests,
+    openTasks,
+  ] = await Promise.all([
+    prisma.request.count({ where: { tenantId: user.tenantId, requesterId: user.id } }),
+    prisma.request.count({ where: requestWhere }),
+    prisma.workflowTask.count({ where: taskWhere }),
+    prisma.workflowTask.count({ where: taskWhere }),
+    prisma.request.groupBy({
+      by: ["status"],
+      where: requestWhere,
+      _count: { _all: true },
+    }),
+    prisma.request.findMany({
+      where: requestWhere,
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        requestNumber: true,
+        requesterId: true,
+        status: true,
+        currentStep: true,
+        createdAt: true,
+        payload: true,
+      },
+    }),
+    prisma.workflowTask.findMany({
+      where: taskWhere,
+      orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+      take: 6,
+      select: {
+        id: true,
+        requestId: true,
+        stepName: true,
+        status: true,
+        dueAt: true,
+        createdAt: true,
+      },
+    }),
+  ]);
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: [...new Set(recentRequests.map((request) => request.requesterId))] } },
+    select: { id: true, firstName: true, lastName: true, email: true },
+  });
+  const taskRequests = await prisma.request.findMany({
+    where: { id: { in: [...new Set(openTasks.map((task) => task.requestId))] } },
+    select: { id: true, requestNumber: true },
+  });
+  const userById = new Map(users.map((item) => [item.id, item]));
+  const requestById = new Map(taskRequests.map((request) => [request.id, request]));
+
+  return {
+    roleExperience: isManager ? ("manager" as const) : ("employee" as const),
+    generatedAt: formatDateTime(new Date()),
+    kpis: isManager
+      ? [
+          { title: "Pending approvals", value: pendingApprovalCount, detail: "Assigned approval work", href: "/approvals" },
+          { title: "Team requests", value: teamRequestCount, detail: `${teamMemberIds.length} direct reports`, href: "/requests" },
+          { title: "Open tasks", value: pendingTaskCount, detail: "Assigned workflow tasks", href: "/tasks" },
+        ]
+      : [
+          { title: "My requests", value: myRequestCount, detail: "Submitted by you", href: "/requests" },
+          { title: "My pending tasks", value: pendingTaskCount, detail: "Assigned workflow tasks", href: "/tasks" },
+          { title: "Recent submissions", value: recentRequests.length, detail: "Latest visible requests", href: "/requests" },
+        ],
+    statusSummary: Object.values(RequestStatus).map((status) => ({
+      status,
+      label: statusLabel(status),
+      count: statusCounts.find((item) => item.status === status)?._count._all ?? 0,
+    })),
+    recentRequests: recentRequests.map((request) => {
+      const payload = request.payload as Record<string, unknown>;
+      return {
+        id: request.id,
+        requestNumber: request.requestNumber,
+        requester: personName(userById.get(request.requesterId)),
+        title: String(payload.purpose ?? payload.requestTypeName ?? "Request"),
+        statusLabel: statusLabel(request.status),
+        currentStep: request.currentStep ?? "Not started",
+        createdAt: formatDateTime(request.createdAt),
+        href: `/requests/${request.id}`,
+      };
+    }),
+    openTasks: openTasks.map((task) => ({
+      id: task.id,
+      title: task.stepName,
+      requestNumber: requestById.get(task.requestId)?.requestNumber ?? "Unknown request",
+      dueAt: task.dueAt ? formatDateTime(task.dueAt) : "No due date",
+      overdue: Boolean(task.dueAt && task.dueAt < new Date()),
+      href: `/tasks/${task.id}`,
+    })),
   };
 }

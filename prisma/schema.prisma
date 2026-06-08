@@ -10,16 +10,14 @@ datasource db {
 enum RequestStatus {
   DRAFT
   SUBMITTED
-  PENDING_LM
-  PENDING_BUMA
-  PENDING_C5
-  PENDING_CEO
-  MANAGER_APPROVAL
-  FINANCE_APPROVAL
+  IN_REVIEW
+  PENDING_APPROVAL
   APPROVED
   REJECTED
+  RETURNED_FOR_REWORK
   CANCELLED
   COMPLETED
+  CLOSED
 }
 
 enum TaskStatus {
@@ -118,6 +116,10 @@ model Tenant {
   approvalSnapshots ApprovalSnapshot[]
   approvalActions ApprovalAction[]
   workflowAssignments WorkflowAssignment[]
+  permissions Permission[]
+  responsibilities Responsibility[]
+  responsibilityAssignments ResponsibilityAssignment[]
+  escalationRules EscalationRule[]
 }
 
 model User {
@@ -148,8 +150,11 @@ model User {
   delegatedTaskAuthority WorkflowTask[] @relation("TaskDelegatedFrom")
   auditLogs      AuditLog[]
   notifications  Notification[]
-  delegatedFrom  Delegation[]    @relation("DelegatedFrom")
-  delegatedTo    Delegation[]    @relation("DelegatedTo")
+  primaryAssignments ResponsibilityAssignment[] @relation("PrimaryAssignment")
+  delegateAssignments ResponsibilityAssignment[] @relation("DelegateAssignment")
+  delegatedFrom Delegation[] @relation("DelegatedFrom")
+  delegatedTo Delegation[] @relation("DelegatedTo")
+
   approvalActionsTaken ApprovalAction[] @relation("ApprovalActionActor")
   approvalAuthorityOwned ApprovalAction[] @relation("ApprovalActionAuthorityOwner")
   workflowAssignments WorkflowAssignment[]
@@ -157,9 +162,9 @@ model User {
 
 model Permission {
   id        String   @id @default(uuid()) @map("_id")
-  name      String   @unique
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  rolePermissions RolePermission[]
 }
 
 model RolePermission {
@@ -177,8 +182,8 @@ model Role {
   tenantId String
 
   tenant          Tenant          @relation(fields: [tenantId], references: [id])
-  users          UserRole[]
   rolePermissions RolePermission[]
+  users           UserRole[]
 }
 
 model UserRole {
@@ -218,8 +223,9 @@ model Request {
   approvalActions ApprovalAction[]
   workflowAssignments WorkflowAssignment[]
   workflowEvents WorkflowEvent[]
-  approvalSnapshots ApprovalSnapshot[]
+  travelRequestDetails TravelRequestDetails? @relation
 
+  approvalSnapshots ApprovalSnapshot[]
 }
 
 model TravelRequestDetails {
@@ -563,4 +569,40 @@ model WorkflowEvent {
   request        Request? @relation(fields: [requestId], references: [id])
 
   @@index([tenantId, requestId, createdAt])
+}
+model Responsibility {
+  id          String   @id @default(uuid()) @map("_id")
+  tenantId    String
+  code        String   @unique
+  description String?
+  order       Int      @default(0)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  assignments ResponsibilityAssignment[]
+  escalationsFrom EscalationRule[] @relation("EscalationFrom")
+  escalationsTo   EscalationRule[] @relation("EscalationTo")
+}
+
+model ResponsibilityAssignment {
+  id                String   @id @default(uuid()) @map("_id")
+  tenantId          String
+  responsibilityId  String
+  primaryUserId     String?
+  delegateUserId    String?
+  active            Boolean  @default(true)
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  responsibility    Responsibility @relation(fields: [responsibilityId], references: [id])
+  primaryUser       User?    @relation("PrimaryAssignment", fields: [primaryUserId], references: [id])
+  delegateUser      User?    @relation("DelegateAssignment", fields: [delegateUserId], references: [id])
+}
+
+model EscalationRule {
+  id                     String   @id @default(uuid()) @map("_id")
+  tenantId               String
+  sourceResponsibilityId  String
+  targetResponsibilityId  String
+  condition              String   // e.g., "disabled", "sla_exceeded"
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id])
+  sourceResponsibility   Responsibility @relation("EscalationFrom", fields: [sourceResponsibilityId], references: [id])
+  targetResponsibility   Responsibility @relation("EscalationTo", fields: [targetResponsibilityId], references: [id])
+  @@unique([tenantId, sourceResponsibilityId, condition])
 }

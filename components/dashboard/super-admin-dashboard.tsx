@@ -177,6 +177,23 @@ export function SuperAdminDashboard({ data }: { data: SuperAdminDashboardData })
         <div className="super-admin-panel">
           <header>
             <div>
+              <h2>System health</h2>
+              <p>Operational indicators for platform monitoring.</p>
+            </div>
+          </header>
+          <div className="task-health">
+            {data.systemHealth.map((item) => (
+              <span className={`health-indicator health-indicator--${item.state}`} key={item.label}>
+                <small>{item.label}</small>
+                <strong>{item.value}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="super-admin-panel">
+          <header>
+            <div>
               <h2>Pending tasks</h2>
               <p>Oldest due work that can stop the wheel.</p>
             </div>

@@ -44,7 +44,7 @@ export function RoleBasedDashboard({ userRoles }: { userRoles: AppRole[] }) {
     REQUESTER: (
       <div className="debt-dashboard">
         <h2>Requester Dashboard</h2>
-        <p>Create and track your travel requests.</p>
+        <p>Create and track workflow requests across request types.</p>
       </div>
     ),
   };

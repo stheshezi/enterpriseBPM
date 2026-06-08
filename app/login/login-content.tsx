@@ -11,30 +11,19 @@ type LoginPreset = "superAdmin" | "tenantAdmin" | "manager" | "finance" | "reque
 const demoPassword = "ChangeMe123!";
 
 const loginPresets: Record<LoginPreset, { title: string; email: string; route: string; roles: AppRole[] }> = {
-  superAdmin: { title: "Super Admin", email: "admin@example.com", route: "/admin", roles: ["SUPER_ADMIN"] },
-  tenantAdmin: { title: "Tenant Admin", email: "tenant.admin@example.com", route: "/admin/users", roles: ["ADMIN"] },
-  manager: { title: "Manager", email: "manager@example.com", route: "/approvals", roles: ["MANAGER"] },
-  finance: { title: "Finance", email: "finance@example.com", route: "/approvals", roles: ["FINANCE"] },
-  requester: { title: "Requester", email: "requester@example.com", route: "/requests", roles: ["REQUESTER"] },
+  superAdmin: { title: "Super Admin", email: "admin@example.com", route: "/dashboard", roles: ["SUPER_ADMIN"] },
+  tenantAdmin: { title: "Tenant Admin", email: "tenant.admin@example.com", route: "/dashboard", roles: ["ADMIN"] },
+  manager: { title: "Manager", email: "manager@example.com", route: "/dashboard", roles: ["MANAGER"] },
+  finance: { title: "Finance", email: "finance@example.com", route: "/dashboard", roles: ["FINANCE"] },
+  requester: { title: "Requester", email: "requester@example.com", route: "/dashboard", roles: ["REQUESTER"] },
 };
-
-const roleRoutes: Array<{ role: AppRole; route: string }> = [
-  { role: "SUPER_ADMIN", route: "/admin" },
-  { role: "ADMIN", route: "/admin/users" },
-  { role: "IT_SUPPORT", route: "/admin/users" },
-  { role: "MANAGER", route: "/approvals" },
-  { role: "FINANCE", route: "/approvals" },
-  { role: "REQUESTER", route: "/requests" },
-];
 
 function isSafeCallbackUrl(value: string | null) {
   return Boolean(value?.startsWith("/") && !value.startsWith("//") && !value.startsWith("/login"));
 }
 
-function destinationForRoles(roles: AppRole[] | undefined, callbackUrl: string | null) {
+function destinationForLogin(callbackUrl: string | null) {
   if (isSafeCallbackUrl(callbackUrl)) return callbackUrl as string;
-  const routeMatch = roleRoutes.find(({ role }) => roles?.includes(role));
-  if (routeMatch) return routeMatch.route;
   return "/dashboard";
 }
 
@@ -59,7 +48,7 @@ export function LoginContent() {
     async function redirectAuthenticatedUser() {
       const session = await getSession();
       if (ignore || !session?.user) return;
-      router.replace(destinationForRoles(session.user.roles, callbackUrl));
+      router.replace(destinationForLogin(callbackUrl));
       router.refresh();
     }
 
@@ -94,8 +83,8 @@ export function LoginContent() {
         return;
       }
 
-      const session = await getSession();
-      router.push(destinationForRoles(session?.user.roles, callbackUrl));
+      await getSession();
+      router.push(destinationForLogin(callbackUrl));
       router.refresh();
     } catch {
       setError("An unexpected sign-in error occurred. Please try again.");
@@ -115,7 +104,7 @@ export function LoginContent() {
         <div className="debt-login-center">
           <header className="debt-login-header">
             <div className="debt-login-brand">Enterprise BPM</div>
-            <p>Log in to manage travel requests, approvals, and workflow decisions.</p>
+            <p>Log in to manage requests, approvals, dashboards, and workflow decisions.</p>
           </header>
 
           <div className="debt-login-card">

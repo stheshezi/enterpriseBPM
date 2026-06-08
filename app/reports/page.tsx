@@ -2,11 +2,11 @@ import Link from "next/link";
 import { KpiCard, SlaOverviewCard, StatusSummaryCard } from "@/components/dashboard";
 import { PageContainer, PageHeader } from "@/components/layout";
 import { PERMISSIONS } from "@/config/permissions";
-import { requirePermission } from "@/lib/access-control";
+import { requireAnyPermission } from "@/lib/access-control";
 import { getSuperAdminDashboardData } from "@/lib/dashboard-data";
 
 export default async function ReportsPage() {
-  const user = await requirePermission(PERMISSIONS.REPORTS_VIEW);
+  const user = await requireAnyPermission(PERMISSIONS.REPORTS_VIEW);
   const data = await getSuperAdminDashboardData(user);
   const totalRequests = data.kpis.find((kpi) => kpi.id === "requests")?.value ?? 0;
   const pendingApprovals = data.kpis.find((kpi) => kpi.id === "pending")?.value ?? 0;
